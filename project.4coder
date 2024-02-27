@@ -36,7 +36,7 @@ commands = {
  .build_release = { .out = "*compilation*", .footer_panel = false, .save_dirty_files = true,
    .win = "call build.bat -r"},
  .run = { .out = "*compilation*", .footer_panel = false, .save_dirty_files = false,
-   .win = "w:\remedy\remedybg.exe start-debugging"},
+   .win = "@echo off w:\remedy\remedybg.exe start-debugging"},
  .open_remedy = { .footer_panel = false, .save_dirty_files = true,
 	.win = "w:\remedy\remedybg.exe dev\jd_app.rdbg",},
 };

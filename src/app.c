@@ -78,4 +78,3 @@ jd_DLLNode* jd_DLLPush(jd_DLL* list, void* data) {
         list->last = node;
     }
 }
-
