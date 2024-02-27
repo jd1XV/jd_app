@@ -1,0 +1,78 @@
+jd_String jd_StrLit(c8* c_str) {
+    jd_String str = {0};
+    str.mem = c_str;
+    while (*c_str != 0) {
+        c_str++;
+        str.count++;
+    }
+    
+    return str;
+}
+
+jd_String jd_StringPush(jd_Arena* arena, jd_String str) {
+    jd_String string = {
+        .mem = jd_ArenaAlloc(arena, str.count + 1), // + 1 so our strings will be null-terminated by default
+        .count = str.count
+    };
+    
+    jd_MemCpy(string.mem, str.mem, str.count);
+    return string;
+}
+
+jd_DString* jd_DStringCreate(u64 capacity) {
+    jd_Arena* arena = jd_ArenaCreate(capacity, 0);
+    jd_DString* d_string = jd_ArenaAlloc(arena, sizeof(*d_string));
+    d_string->arena = arena;
+    d_string->mem = arena->mem + arena->pos;
+    d_string->count = 0;
+    return d_string;
+}
+
+void jd_DStringClear(jd_DString* d_string) {
+    jd_ArenaPopTo(d_string->arena, 0 + sizeof(*d_string));
+}
+
+void jd_DStringAppend(jd_DString* d_string, jd_String app) {
+    u8* ptr = jd_ArenaAlloc(d_string->arena, app.count);
+    d_string->count += app.count;
+    jd_MemCpy(ptr, app.mem, app.count);
+}
+
+static const c8 _jd_digit_table[36] =  {
+    '0', '1',' 2', '3', '4', '5', '6', '7', '8', '9',
+    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'
+};
+
+void jd_DStringAppendU32(jd_DString* d_string, u32 num, u32 radix) {
+    u64 places = 0; 
+    for (u64 quot = 0; quot > 0; quot /= radix) {
+        places++;
+    }
+    
+    u8* ptr = jd_ArenaAlloc(d_string->arena, places);
+    d_string->count += places;
+    
+    for (u64 i = 0; i < places; i++) {
+        if (i + 1 == places) {
+            ptr[i] = _jd_digit_table[num];
+            break;
+        }
+        
+        u64 sub = jd_Pow_u64(radix, (places - i) - 1);
+        u64 digit = num / sub;
+        ptr[i] = _jd_digit_table[digit];
+        num -= sub * digit;
+    }
+}
+
+void jd_DStringAppendI32(jd_DString* d_string, i32 num, u32 radix) {
+    
+}
+
+void jd_DStringAppendU64(jd_DString* d_string, u64 num, u32 radix) {
+    
+}
+
+void jd_DStringAppendI64(jd_DString* d_string, i64 num, u32 radix) {
+    
+}
