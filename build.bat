@@ -7,7 +7,7 @@ set dir=%~dp0
 
 set appname=jd_app_test
 
-set srcfiles= **.c dep\glad\glad.c
+set srcfiles= **.c dep\glad\glad_wgl.c dep\glad\glad.c
 
 set subsys="windows"
 
