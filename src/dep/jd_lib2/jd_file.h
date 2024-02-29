@@ -21,9 +21,6 @@
 
 typedef jd_View jd_File;
 
-jd_File jd_FileReadAll(jd_Arena arena, jd_String path);
-
-
 #ifdef JD_IMPLEMENTATION
 
 #ifdef JD_WINDOWS

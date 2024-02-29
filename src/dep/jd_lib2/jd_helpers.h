@@ -24,4 +24,7 @@
 #define jd_AlignUpPow2(x, p) (((x) + (p) - 1)&~((p) - 1))
 #define jd_BitIsSet(field, val) (field & (1 << val))
 
+#define jd_GetHiWordU64(x) (u32)(x >> 32)
+#define jd_GetLoWordU64(x) (u32)(x & 0xFFFFFFFF)
+
 #endif //JD_HELPERS_H

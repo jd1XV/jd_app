@@ -14,7 +14,6 @@ inline u8* _jd_Internal_ArenaReserve(u64 reserve, u64 commit_block_size) {
     u8* ptr = 0;
     
     ptr = VirtualAlloc(0, reserve, MEM_RESERVE, PAGE_READWRITE);
-    if (!ptr) printf("Couldn't reserve arena. GLE=%d\n", GetLastError());
     VirtualAlloc(ptr, commit_block_size, MEM_COMMIT, PAGE_READWRITE);
     return ptr;
 }
@@ -29,7 +28,7 @@ inline void _jd_Internal_ArenaDecommit(jd_Arena* arena, u64 pos, u64 size) {
 
 jd_Arena* jd_ArenaCreate(u64 capacity, u64 commit_page_size) {
     if (capacity == 0) capacity = GIGABYTES(4);
-    if (commit_page_size == 0) commit_page_size = jd_Max(capacity / 8096, KILOBYTES(4)) ;
+    if (commit_page_size == 0) commit_page_size = jd_Max(capacity / 8096, KILOBYTES(64)) ;
     
     jd_Arena* arena = (jd_Arena*)_jd_Internal_ArenaReserve(capacity, commit_page_size);
     
@@ -85,24 +84,3 @@ void jd_ArenaRelease(jd_Arena* arena) {
 
 #define jd_BitScanMSB64(in, mask) _BitScanReverse64(in, mask)
 #define jd_BitScanLSB64(in, mask) _BitScanForward64(in, mask)
-
-#if 0
-
-// 1.2 ARENAS
-inline u8* jd_Win32_Internal_ArenaReserve(u64 reserve_size, u64 commit_block_size);
-inline void jd_Win32_Internal_ArenaCommit(jd_Arena* arena, u64 size);
-inline void jd_Win32_Internal_ArenaDecommit(jd_Arena* arena, u64 pos, u64 size);
-inline void jd_Win32_Internal_ArenaRelease(jd_Arena* arena);
-void jd_Win32_Internal_MemCpy(void* dest, const void* src, size_t count);
-void jd_Win32_Internal_ZeroMemory(void* dest, size_t count);
-void jd_Win32_Internal_MemMove(void* dest, const void* src, size_t count);
-
-#define jd_Platform_ArenaReserve(x, y) jd_Win32_Internal_ArenaReserve(x, y)
-#define jd_Platform_ArenaCommit(x, y) jd_Win32_Internal_ArenaCommit(x, y)
-#define jd_Platform_ArenaDecommit(x, y, z) jd_Win32_Internal_ArenaDecommit(x, y, z)
-#define jd_Platform_ArenaRelease(x) jd_Win32_Internal_ArenaRelease(x)
-#define jd_Platform_MemCpy(d, s, c) jd_Win32_Internal_MemCpy(d, s, c)
-#define jd_Platform_MemMove(d, s, c) jd_Win32_Internal_MemMove(d, s, c);
-#define jd_Platform_MemZero(d, c) jd_Win32_Internal_ZeroMemory(d, c);
-
-#endif

@@ -13,7 +13,6 @@ typedef struct jd_Arena {
     u64 pos;
     u64 commit_pos;
     u64 _commit_page_size;
-    
 } jd_Arena;
 
 jd_Arena* jd_ArenaCreate(u64 reserve, u64 commit_block_size);
