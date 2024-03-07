@@ -7,7 +7,7 @@ set dir=%~dp0
 
 set appname=jd_app_test
 
-set srcfiles= **.c dep\glad\glad_wgl.c dep\glad\glad.c
+set srcfiles= main.c dep\glad\glad_wgl.c dep\glad\glad.c
 
 set subsys="windows"
 
@@ -35,4 +35,8 @@ if %arg%==-d (set linkflags = /DEBUG:FULL !linkflags!)
 
 pushd src\
 cl !optiflags! !includes! !compflags! !srcfiles! /Fe..\build\!appname!.exe /Fo..\dev\obj\  /link /INCREMENTAL:NO !linkflags! /SUBSYSTEM:!subsys!
+popd
+
+pushd build\
+start /b mt.exe -nologo -manifest "!appname!.exe.manifest" -outputresource:"!appname!.exe"
 popd

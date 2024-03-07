@@ -35,6 +35,8 @@ commands = {
    .win = "call build.bat -d"},
  .build_release = { .out = "*compilation*", .footer_panel = false, .save_dirty_files = true,
    .win = "call build.bat -r"},
+ .build_lib = { .out = "*compilation*", .footer_panel = false, .save_dirty_files = true,
+   .win = "call build_lib.bat -r"},
  .run = { .out = "*compilation*", .footer_panel = false, .save_dirty_files = false,
    .win = "w:\remedy\remedybg.exe start-debugging"},
  .open_remedy = { .footer_panel = false, .save_dirty_files = true,
@@ -46,4 +48,5 @@ fkey_command = {
 .F2 = "build_debug",
 .F3 = "build_release",
 .F4 = "open_remedy",
+.F5 = "build_lib"
 };

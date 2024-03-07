@@ -7,6 +7,10 @@
 #include "jd_defs.h"
 #endif 
 
+#ifndef JD_LOCKS_H
+#include "jd_locks.h"
+#endif
+
 #ifndef JD_STRING_H
 #include "jd_string.h"
 #endif
@@ -15,11 +19,16 @@
 #include "jd_memory.h"
 #endif
 
+#ifndef JD_DEBUG_H
+#include "jd_debug.h"
+#endif
+
 typedef enum jd_ErrorCode {
     jd_Error_AccessDenied = 1,
     jd_Error_FileNotFound,
     jd_Error_EmptyPointer,
     jd_Error_OutOfMemory,
+    jd_Error_API_Misuse,
     jd_Error_Code_Count
 } jd_ErrorCode;
 
@@ -32,6 +41,7 @@ typedef enum jd_ErrorSeverity {
 } jd_ErrorSeverity;
 
 typedef struct jd_Error {
+    jd_String        func;
     jd_String        msg;
     jd_String        file;
     u32              line;
@@ -50,10 +60,10 @@ typedef struct jd_ErrorLog {
     u64 refresh_pos;
 } jd_ErrorLog;
 
-void _jd_LogError(jd_String msg, jd_String filename, u32 line, jd_ErrorCode code, jd_ErrorSeverity severity);
+void _jd_LogError(jd_String func, jd_String msg, jd_String filename, u32 line, jd_ErrorCode code, jd_ErrorSeverity severity);
 b32 jd_ErrorLogInit(jd_String serialized_file_path, u64 max_errors);
 
-#define jd_LogError(cmsg, code, severity) _jd_LogError(jd_StrLit(__func__ ##csmg), jd_StrLit(__FILE__), __LINE__, code, severity)
+#define jd_LogError(cmsg, code, severity) _jd_LogError(jd_StrLit(__func__), jd_StrLit(cmsg), jd_StrLit(__FILE__), __LINE__, code, severity)
 
 #ifdef JD_IMPLEMENTATION
 #include "jd_error.c"

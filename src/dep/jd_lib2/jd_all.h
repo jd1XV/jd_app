@@ -15,4 +15,7 @@
 #include "jd_disk.h"
 #include "jd_app.h"
 #include "jd_renderer.h"
+#ifdef JD_DEBUG
+#include "jd_debug.h"
+#endif
 #endif //JD_ALL_H

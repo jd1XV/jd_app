@@ -4,52 +4,84 @@
 
 #include "../glad/glad_wgl.h"
 
+static const jd_String app_manifest = jd_StrConst("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>" \
+                                                  "<assembly xmlns=\"urn:schemas-microsoft-com:asm.v1\" manifestVersion=\"1.0\" xmlns:asmv3=\"urn:schemas-microsoft-com:asm.v3\">" \
+                                                  "<asmv3:application>" \
+                                                  "<asmv3:windowsSettings>" \
+                                                  "<dpiAware xmlns=\"http://schemas.microsoft.com/SMI/2005/WindowsSettings\">true</dpiAware>" \
+                                                  "<dpiAwareness xmlns=\"http://schemas.microsoft.com/SMI/2016/WindowsSettings\">PerMonitorV2</dpiAwareness>" \
+                                                  "</asmv3:windowsSettings>" \
+                                                  "</asmv3:application>" \
+                                                  "</assembly>");
+
+#define JD_APP_MAX_PACKAGE_NAME_LENGTH KILOBYTES(64)
+
 typedef struct jd_App {
     jd_Arena* arena;
     jd_Arena* frame_arena;
     jd_UserLock* lock;
+    jd_String package_name;
     
     HINSTANCE instance;
     
     struct jd_Window* windows[JD_APP_MAX_WINDOWS];
     u64 window_count;
+    
+    jd_AppMode mode;
+    HMODULE reloadable_dll;
+    jd_String lib_file_name;
+    jd_String lib_copied_file_name;
+    u64 reloadable_dll_file_time;
 } jd_App;
 
-typedef void (*_jd_AppWindowFunction)(struct jd_Window* window);
+void jd_AppFreeLib(jd_App* app) {
+    FreeLibrary(app->reloadable_dll);
+}
 
-#define jd_AppWindowFunction(x) void x (struct jd_Window* window)
-
-typedef struct jd_Window {
-    jd_App* app;
-    jd_Arena* arena;
-    jd_V2F pos;
-    jd_V2F size;
-    jd_V2S32 pos_i;
-    jd_V2S32 size_i;
+void jd_AppLoadLib(jd_App* app) {
+    jd_DString* package_name_str = jd_DStringCreate(JD_APP_MAX_PACKAGE_NAME_LENGTH);
+    if (app->package_name.count + sizeof("jd_app_pkg/.dll.active") > JD_APP_MAX_PACKAGE_NAME_LENGTH) {
+        jd_LogError("App name is too long!", jd_Error_OutOfMemory, jd_Error_Fatal);
+    }
     
-    _jd_AppWindowFunction func;
+    jd_DStringAppend(package_name_str, jd_StrLit("jd_app_pkg/"));
+    jd_DStringAppend(package_name_str, app->package_name);
+    jd_DStringAppend(package_name_str, jd_StrLit(".dll"));
     
-    HWND handle;
-    WNDCLASSA wndclass;
-    jd_String wndclass_str;
-    PIXELFORMATDESCRIPTOR pixel_format_descriptor;
+    if (app->lib_file_name.count == 0) 
+        app->lib_file_name = jd_StringPush(app->arena, jd_DStringGet(package_name_str));
     
-    HGLRC ogl_context;
-    HDC device_context;
-    jd_Renderer* renderer;
+    if (!jd_DiskPathExists(app->lib_file_name)) {
+        jd_LogError("Could not find specified .dll!", jd_Error_FileNotFound, jd_Error_Fatal);
+    }
     
-    f32 dpi_scaling;
+    jd_DStringAppend(package_name_str, jd_StrLit(".active"));
+    jd_DiskPathCopy(jd_DStringGet(package_name_str), app->lib_file_name, false);
     
-    jd_String title;
-    b8 closed;
-} jd_Window;
-
-LRESULT CALLBACK jd_WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-
-static void _jd_Internal_WindowUpdateFunctionStub(jd_Window* window) {}
+    if (app->lib_copied_file_name.count == 0) 
+        app->lib_copied_file_name = jd_StringPush(app->arena, jd_DStringGet(package_name_str));
+    
+    app->reloadable_dll = LoadLibraryExA(package_name_str->mem, NULL, 0);
+    
+    for (u64 i = 0; i < app->window_count; i++) {
+        jd_Window* window = app->windows[i];
+        window->func = (_jd_AppWindowFunction)GetProcAddress(app->reloadable_dll, window->function_name.mem);
+    }
+    
+    jd_DStringRelease(package_name_str);
+}
 
 void jd_AppUpdatePlatformWindows(jd_App* app) {
     jd_UserLockGet(app->lock);
+    
+    u64 last_reload_time = app->reloadable_dll_file_time;
+    u64 current_reload_time = jd_DiskGetFileLastMod(app->lib_file_name);
+    
+    if (last_reload_time < current_reload_time) {
+        jd_AppFreeLib(app);
+        jd_AppLoadLib(app);
+    }
+    
     for (u64 i = 0; i < app->window_count; i++) {
         jd_Window* window = app->windows[i];
         MSG msg = {0};
@@ -109,22 +141,62 @@ void jd_AppPlatformCloseWindow(jd_Window* window) {
     jd_ArenaRelease(window->arena);
 }
 
-jd_Window* jd_AppPlatformCreateWindow(jd_App* app, jd_String id_str, jd_String title, jd_AppWindowFunctionPtr function) {
-    if (app->window_count >= JD_APP_MAX_WINDOWS) return 0;
+jd_Window* jd_AppPlatformCreateWindow(jd_WindowConfig* config) {
+    if (!config) {
+        jd_LogError("Window initialized without jd_WindowConfig*", jd_Error_API_Misuse, jd_Error_Fatal);
+        return 0;
+    }
+    
+    if (!config->app) {
+        jd_LogError("Window initialized without jd_App*", jd_Error_API_Misuse, jd_Error_Fatal);
+        return 0;
+    }
+    
+    if (config->app->window_count >= JD_APP_MAX_WINDOWS) {
+        jd_LogError("Window count exceeds JD_APP_MAX_WINDOWS", jd_Error_API_Misuse, jd_Error_Critical);
+        return 0;
+    }
+    
     // Register the window class.
     jd_Arena* arena = jd_ArenaCreate(0, 0);
     jd_Window* window = jd_ArenaAlloc(arena, sizeof(*window));
-    window->app = app;
-    window->wndclass_str = jd_StringPush(arena, id_str);
-    window->title = jd_StringPush(arena, title);
+    window->app = config->app;
+    window->wndclass_str = jd_StringPush(arena, config->id_str);
+    window->title = jd_StringPush(arena, config->title);
     window->arena = arena;
-    window->func = function;
+    switch (config->app->mode) {
+        default: break;
+        
+        case JD_AM_STATIC: {
+            if (config->function_ptr) {
+                jd_LogError("App mode set to JD_AM_STATIC, but no Jd_AppWindowFunctionPtr supplied in jd_WindowConfig", jd_Error_API_Misuse, jd_Error_Fatal);
+                return 0;
+            }
+            
+            window->func = config->function_ptr;
+        } break;
+        
+        case JD_AM_RELOADABLE: {
+            if (config->function_name.count == 0) {
+                jd_LogError("App mode set to JD_WFM_RELOADABLE*, but no function name supplied in jd_WindowConfig", jd_Error_API_Misuse, jd_Error_Fatal);
+                return 0;
+            }
+            
+            window->function_name = jd_StringPush(arena, config->function_name);
+            window->func = (_jd_AppWindowFunction)GetProcAddress(config->app->reloadable_dll, config->function_name.mem);
+            if (!window->func) {
+                jd_LogError("Could not find function in .dll!", jd_Error_FileNotFound, jd_Error_Fatal);
+            }
+            
+        } break;
+    }
+    
     window->dpi_scaling = 1.0f; // TODO: Handle HiDPI
     
     WNDCLASSEX wc = {0};
     wc.cbSize = sizeof(WNDCLASSEX);
     wc.lpfnWndProc   = jd_WindowProc;
-    wc.hInstance     = app->instance;
+    wc.hInstance     = config->app->instance;
     wc.lpszClassName = window->wndclass_str.mem;
     wc.cbWndExtra    = sizeof(jd_Window*);
     
@@ -143,7 +215,7 @@ jd_Window* jd_AppPlatformCreateWindow(jd_App* app, jd_String id_str, jd_String t
                                      
                                      NULL,       // Parent window    
                                      NULL,       // Menu
-                                     app->instance,  // Instance handle
+                                     config->app->instance,  // Instance handle
                                      NULL        // Additional application data
                                      );
     
@@ -165,7 +237,7 @@ jd_Window* jd_AppPlatformCreateWindow(jd_App* app, jd_String id_str, jd_String t
     WNDCLASSEX dummy_wc = {0};
     dummy_wc.cbSize = sizeof(WNDCLASSEX);
     dummy_wc.lpfnWndProc   = DefWindowProc;
-    dummy_wc.hInstance     = app->instance;
+    dummy_wc.hInstance     = config->app->instance;
     dummy_wc.lpszClassName = "dummy_wndclass";
     dummy_wc.cbWndExtra    = sizeof(jd_Window*);
     RegisterClassEx(&dummy_wc);
@@ -182,7 +254,7 @@ jd_Window* jd_AppPlatformCreateWindow(jd_App* app, jd_String id_str, jd_String t
                                      
                                      NULL,       // Parent window    
                                      NULL,       // Menu
-                                     app->instance,  // Instance handle
+                                     config->app->instance,  // Instance handle
                                      NULL        // Additional application data
                                      );
     
@@ -261,10 +333,10 @@ jd_Window* jd_AppPlatformCreateWindow(jd_App* app, jd_String id_str, jd_String t
     
     window->renderer = jd_RendererCreate(window);
     DestroyWindow(dummy_win);
-    jd_UserLockGet(app->lock);
-    app->windows[app->window_count] = window;
-    app->window_count++;
-    jd_UserLockRelease(app->lock);
+    jd_UserLockGet(config->app->lock);
+    config->app->windows[config->app->window_count] = window;
+    config->app->window_count++;
+    jd_UserLockRelease(config->app->lock);
     
     return window;
 }
@@ -290,13 +362,23 @@ LRESULT CALLBACK jd_WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
 
-jd_App* jd_AppCreate() {
+jd_App* jd_AppCreate(jd_AppConfig* config) {
     jd_Arena* arena = jd_ArenaCreate(0, 0);
     jd_App* app = jd_ArenaAlloc(arena, sizeof(*app));
     app->lock = jd_UserLockCreate(arena, 16);
     app->arena = arena;
     app->frame_arena = jd_ArenaCreate(GIGABYTES(1), 0);
-    app->instance = GetModuleHandle(NULL);  
+    app->instance = GetModuleHandle(NULL); 
+    app->mode = config->mode;
+    app->package_name = jd_StringPush(arena, config->package_name);
+    
+    if (app->mode == JD_AM_RELOADABLE) {
+        if (app->package_name.count + sizeof("jd_app_pkg/.dll.active") > JD_APP_MAX_PACKAGE_NAME_LENGTH) {
+            jd_LogError("App name is too long!", jd_Error_OutOfMemory, jd_Error_Fatal);
+        }
+        
+        jd_AppLoadLib(app);
+    }
     return app;
 }
 

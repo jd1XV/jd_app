@@ -32,3 +32,7 @@
 
 *.pdb
 *.exe
+build/jd_app_test.exe
+build/jd_app_test.exe.manifest
+build/jd_app_test.exe
+build/jd_app_test.pdb

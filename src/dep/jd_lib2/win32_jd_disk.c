@@ -14,6 +14,30 @@ b32 jd_DiskPathDelete(jd_String path) {
     return DeleteFileA(path.mem);
 }
 
+u64 jd_DiskGetFileLastMod(jd_String path) {
+    typedef struct _WIN32_FILE_ATTRIBUTE_DATA {
+        DWORD    dwFileAttributes;
+        FILETIME ftCreationTime;
+        FILETIME ftLastAccessTime;
+        FILETIME ftLastWriteTime;
+        DWORD    nFileSizeHigh;
+        DWORD    nFileSizeLow;
+    } WIN32_FILE_ATTRIBUTE_DATA, *LPWIN32_FILE_ATTRIBUTE_DATA;
+    
+    WIN32_FILE_ATTRIBUTE_DATA data = {0};
+    
+    b32 success = GetFileAttributesExA(path.mem, GetFileExInfoStandard, &data);
+    if (!success) {
+        jd_LogError("Could not get file attributes!", jd_Error_FileNotFound, jd_Error_Fatal);
+    }
+    
+    ULARGE_INTEGER u;
+    u.LowPart = data.ftLastWriteTime.dwLowDateTime;
+    u.HighPart = data.ftLastWriteTime.dwHighDateTime;
+    
+    return u.QuadPart;
+}
+
 //jd_StringList jd_DiskDirectoryListFiles(jd_String path, jd_String extension, b32 recursive);
 
 jd_File jd_DiskFileReadFromPath(jd_Arena* arena, jd_String path) {

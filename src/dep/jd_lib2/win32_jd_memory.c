@@ -28,7 +28,8 @@ inline void _jd_Internal_ArenaDecommit(jd_Arena* arena, u64 pos, u64 size) {
 
 jd_Arena* jd_ArenaCreate(u64 capacity, u64 commit_page_size) {
     if (capacity == 0) capacity = GIGABYTES(4);
-    if (commit_page_size == 0) commit_page_size = jd_Max(capacity / 8096, KILOBYTES(64)) ;
+    if (capacity < KILOBYTES(64)) capacity = KILOBYTES(64);
+    if (commit_page_size == 0) commit_page_size = jd_Max(capacity / 8096, KILOBYTES(64));
     
     jd_Arena* arena = (jd_Arena*)_jd_Internal_ArenaReserve(capacity, commit_page_size);
     
@@ -68,7 +69,7 @@ void jd_ArenaPopTo(jd_Arena* arena, u64 pos) {
     u64 pos_aligned = jd_AlignUpPow2(arena->pos, arena->_commit_page_size);
     if (pos_aligned - arena->pos > 0)
         jd_ZeroMemory(arena->mem + arena->pos, pos_aligned - arena->pos);
-    if (arena->commit_pos > pos_aligned) {
+    if (arena->commit_pos > pos_aligned && arena->commit_pos > arena->_commit_page_size) {
         u64 diff = arena->commit_pos - pos_aligned;
         _jd_Internal_ArenaDecommit(arena, pos_aligned, diff);
         arena->commit_pos = pos_aligned;
