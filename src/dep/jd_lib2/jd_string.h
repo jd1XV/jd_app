@@ -23,7 +23,11 @@ jd_String jd_StrLit(c8* c_str);
 #define   jd_StrConst(c_str) {c_str, sizeof(c_str) - 1}
 jd_String jd_StringPush(jd_Arena* arena, jd_String str);
 
+#define jd_DStringGet(x) (jd_String){x->mem, x->count}
+
 jd_DString* jd_DStringCreate(u64 capacity);
+void jd_DStringRelease(jd_DString* d_string);
+
 void jd_DStringClear(jd_DString* d_string);
 void jd_DStringAppend(jd_DString* d_string, jd_String app);
 void jd_DStringAppendU32(jd_DString* d_string, u32 num, u32 radix);

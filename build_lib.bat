@@ -7,8 +7,6 @@ set dir=%~dp0
 
 set appname=jd_app_test
 
-set srcfiles= main.c dep\glad\glad_wgl.c dep\glad\glad.c
-
 set subsys="windows"
 
 set includes= ^
@@ -34,9 +32,5 @@ User32.lib gdi32.lib Opengl32.lib Ws2_32.lib Crypt32.lib Wldap32.lib Normaliz.li
 if %arg%==-d (set linkflags = /DEBUG:FULL !linkflags!)
 
 pushd src\
-cl !optiflags! !includes! !compflags! !srcfiles! /Fe..\build\!appname!.exe /Fo..\dev\obj\  /link /INCREMENTAL:NO !linkflags! /SUBSYSTEM:!subsys!
-popd
-
-pushd build\
-start /b mt.exe -nologo -manifest "!appname!.exe.manifest" -outputresource:"!appname!.exe"
+cl /LD !compflags! !optiflags! app_functions.c /Fo..\dev\obj\ /link !linkflags! ../dev/obj/glad_wgl.obj ../dev/obj/glad.obj ../dev/obj/main.obj /OUT:../build/jd_app_pkg/!appname!.dll 
 popd

@@ -38,6 +38,10 @@ void jd_DStringAppend(jd_DString* d_string, jd_String app) {
     jd_MemCpy(ptr, app.mem, app.count);
 }
 
+void jd_DStringRelease(jd_DString* d_string) {
+    jd_ArenaRelease(d_string->arena);
+}
+
 static const c8 _jd_digit_table[36] =  {
     '0', '1',' 2', '3', '4', '5', '6', '7', '8', '9',
     'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'
@@ -45,7 +49,7 @@ static const c8 _jd_digit_table[36] =  {
 
 void jd_DStringAppendU32(jd_DString* d_string, u32 num, u32 radix) {
     u64 places = 0; 
-    for (u64 quot = 0; quot > 0; quot /= radix) {
+    for (u64 quot = num; quot > 0; quot /= radix) {
         places++;
     }
     

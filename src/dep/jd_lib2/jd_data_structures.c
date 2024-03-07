@@ -75,7 +75,7 @@ jd_DArray* jd_DArrayCreate(u64 max, u64 stride) {
     if (stride <= 0) 
         return 0; // err
     u64 a_cap = max * stride;
-    jd_Arena* arena = jd_ArenaCreate(jd_AlignUpPow2(sizeof(jd_DArray) + a_cap, 64), 0);
+    jd_Arena* arena = jd_ArenaCreate(jd_Max(max * stride, KILOBYTES(64)), jd_Max(stride * 4, KILOBYTES(64)));
     if (!arena) // err 
         return 0;
     
