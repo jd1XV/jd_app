@@ -30,6 +30,8 @@ void jd_DStringRelease(jd_DString* d_string);
 
 void jd_DStringClear(jd_DString* d_string);
 void jd_DStringAppend(jd_DString* d_string, jd_String app);
+void jd_DStringAppendC8(jd_DString* d_string, c8 app);
+void jd_DStringAppendU8(jd_DString* d_string, u8 num, u32 radix);
 void jd_DStringAppendU32(jd_DString* d_string, u32 num, u32 radix);
 void jd_DStringAppendI32(jd_DString* d_string, i32 num, u32 radix);
 void jd_DStringAppendU64(jd_DString* d_string, u64 num, u32 radix);

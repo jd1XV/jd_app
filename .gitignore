@@ -36,3 +36,8 @@ build/jd_app_test.exe
 build/jd_app_test.exe.manifest
 build/jd_app_test.exe
 build/jd_app_test.pdb
+build/jd_app_pkg/jd_app_test.dll.active
+build/generated/continuation.txt
+/build/generated
+/build
+/dev/obj

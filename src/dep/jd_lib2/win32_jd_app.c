@@ -143,17 +143,17 @@ void jd_AppPlatformCloseWindow(jd_Window* window) {
 
 jd_Window* jd_AppPlatformCreateWindow(jd_WindowConfig* config) {
     if (!config) {
-        jd_LogError("Window initialized without jd_WindowConfig*", jd_Error_API_Misuse, jd_Error_Fatal);
+        jd_LogError("Window initialized without jd_WindowConfig*", jd_Error_APIMisuse, jd_Error_Fatal);
         return 0;
     }
     
     if (!config->app) {
-        jd_LogError("Window initialized without jd_App*", jd_Error_API_Misuse, jd_Error_Fatal);
+        jd_LogError("Window initialized without jd_App*", jd_Error_APIMisuse, jd_Error_Fatal);
         return 0;
     }
     
     if (config->app->window_count >= JD_APP_MAX_WINDOWS) {
-        jd_LogError("Window count exceeds JD_APP_MAX_WINDOWS", jd_Error_API_Misuse, jd_Error_Critical);
+        jd_LogError("Window count exceeds JD_APP_MAX_WINDOWS", jd_Error_APIMisuse, jd_Error_Critical);
         return 0;
     }
     
@@ -169,7 +169,7 @@ jd_Window* jd_AppPlatformCreateWindow(jd_WindowConfig* config) {
         
         case JD_AM_STATIC: {
             if (config->function_ptr) {
-                jd_LogError("App mode set to JD_AM_STATIC, but no Jd_AppWindowFunctionPtr supplied in jd_WindowConfig", jd_Error_API_Misuse, jd_Error_Fatal);
+                jd_LogError("App mode set to JD_AM_STATIC, but no Jd_AppWindowFunctionPtr supplied in jd_WindowConfig", jd_Error_APIMisuse, jd_Error_Fatal);
                 return 0;
             }
             
@@ -178,7 +178,7 @@ jd_Window* jd_AppPlatformCreateWindow(jd_WindowConfig* config) {
         
         case JD_AM_RELOADABLE: {
             if (config->function_name.count == 0) {
-                jd_LogError("App mode set to JD_WFM_RELOADABLE*, but no function name supplied in jd_WindowConfig", jd_Error_API_Misuse, jd_Error_Fatal);
+                jd_LogError("App mode set to JD_WFM_RELOADABLE*, but no function name supplied in jd_WindowConfig", jd_Error_APIMisuse, jd_Error_Fatal);
                 return 0;
             }
             

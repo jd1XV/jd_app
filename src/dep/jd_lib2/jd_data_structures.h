@@ -53,6 +53,14 @@ b32        jd_DArrayClear(jd_DArray* d_array);
 b32        jd_DArrayClearToIndex(jd_DArray* d_array, u64 index);
 void       jd_DArrayRelease(jd_DArray* d_array);
 
+typedef struct jd_HashMap {
+    u64 cap;
+    u64 stride;
+    void* data;
+} jd_HashMap;
+
+u32 jd_HashMapStore(jd_HashMap* map, u32 key, void* data);
+jd_HashMap* jd_HashMapCreate(jd_Arena* arena, u64 cap, u64 stride);
 
 #ifdef JD_IMPLEMENTATION
 #include "jd_data_structures.c"

@@ -20,7 +20,8 @@ load_paths_base = {
  { .path = "C:\Code\jdat", .relative = false, .recursive = true, },
  { .path = "C:\Code\jd_thread", .relative = false, .recursive = true, },
  { .path = "C:\Code\jdated\src", .relative = false, .recursive = true, },
- { .path = "C:\Program Files (x86)\Windows Kits\10\Include\10.0.19041.0", .relative = false, .recursive = true, }
+ { .path = "C:\Program Files (x86)\Windows Kits\10\Include\10.0.19041.0", .relative = false, .recursive = true, },
+ { .path = "C:\Code\freetype-2.13.2\include", .relative = false, .recursive = true, }
 
 };
 

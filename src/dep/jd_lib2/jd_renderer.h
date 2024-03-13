@@ -41,15 +41,37 @@ typedef struct jd_Rectangle {
 typedef struct jd_Glyph {
     jd_V2F offset;
     jd_V2F size;
+    f32 h_advance;
 } jd_Glyph;
 
-typedef struct jd_Font {
-    jd_File ttf_file;
+typedef struct jd_TypefaceUnicodeRange {
+    u32 begin;
+    u32 end;
+} jd_TypefaceUnicodeRange;
+
+static jd_ReadOnly jd_TypefaceUnicodeRange jd_typeface_range_end = {0, 0};
+
+typedef struct jd_Typeface {
     f32 face_size;
+    
     f32 ascent;
     f32 descent;
     f32 line_gap;
     f32 line_adv;
+    
+    jd_Glyph* basic_glyphs; // glyphs for up to the first 2048 codepoints, loaded by default
+    
+    u32 gl_texture;
+    u32 texture_width;
+    u32 texture_height;
+    u8* white_bitmap;
+} jd_Typeface;
+
+#if 0
+typedef struct jd_Font {
+    jd_File ttf_file;
+    f32 face_size;
+    f32 ascent;
     
     jd_Glyph glyphs[1024];
     f32 advances[1024];
@@ -59,6 +81,7 @@ typedef struct jd_Font {
     u32 texture_height;
     u8* white_bitmap;
 } jd_Font;
+#endif
 
 typedef struct jd_GLVertex {
     jd_V3F pos;
@@ -104,7 +127,9 @@ typedef struct jd_RenderBox {
 typedef struct jd_Renderer {
     jd_Arena* arena;
     jd_DArray* fonts; // type: jd_Font
+#if 0
     jd_Font* default_font;
+#endif
     
     jd_DArray* vertices; // type: jd_GLVertex
     jd_RenderObjects objects;
@@ -120,10 +145,14 @@ typedef struct jd_Renderer {
     struct jd_Window* linked_window;
 } jd_Renderer;
 
+#if 0
 jd_Font* jd_FontPushFromFile(jd_Renderer* renderer, jd_String ttf_path, i32 face_size_pixels);
+#endif
 jd_Renderer* jd_RendererCreate();
+#if 0
 void jd_DrawString(jd_Renderer* renderer, jd_Font* font, jd_String str, jd_V2F window_pos, jd_V4F color, f32 wrap_width);
 void jd_DrawStringWithBG(jd_Renderer* renderer, jd_Font* font, jd_String str, jd_V2F window_pos, jd_V4F text_color, jd_V4F bg_color, f32 wrap_width);
+#endif
 void jd_DrawRect(jd_Renderer* renderer, jd_V2F window_pos, jd_V2F size, jd_V4F col);
 void jd_RendererSetDPIScale(jd_Renderer* renderer, f32 scale);
 void jd_RendererSetRenderSize(jd_Renderer* renderer, jd_V2F render_size);

@@ -3,6 +3,9 @@
 #include "dep/glad/glad_wgl.h"
 #include "dep/glad/glad.h"
 
+#include <ft2build.h>
+#include FT_FREETYPE_H
+
 jd_String vs_string = jd_StrConst("#version 430\n"
                                   "layout (location = 0) in vec3 vert_xyz;\n"
                                   "layout (location = 1) in vec3 vert_uvw;\n"
@@ -78,6 +81,16 @@ void jd_ShaderCreate(jd_Renderer* renderer) {
 #define _JD_RENDER_FONT_TEXTURE_HEIGHT 256
 #define _JD_RENDER_FONT_TEXTURE_WIDTH 128
 
+jd_Typeface* jd_TypefaceLoadFromMemory(jd_Renderer* renderer, jd_File file, i32 base_point_size) {
+    if (file.size == 0) {
+        jd_LogError("File is zero-sized! Did it load correctly?", jd_Error_MissingResource, jd_Error_Common);
+        return 0;
+    }
+    
+    
+}
+
+#if 0
 jd_Font* jd_FontPushFromFile(jd_Renderer* renderer, jd_String ttf_path, i32 face_size_pixels) {
     if (!jd_DiskPathExists(ttf_path)) return NULL;
     jd_Font* font = jd_DArrayPushBack(renderer->fonts, NULL);
@@ -162,6 +175,7 @@ jd_Font* jd_FontPushFromFile(jd_Renderer* renderer, jd_String ttf_path, i32 face
     }
     return font;
 }
+
 
 void jd_RefreshFonts(jd_Renderer* renderer) {
     for (u64 i = 0; i < renderer->fonts->view.count; i++) {
@@ -334,6 +348,7 @@ void jd_DrawStringWithBG(jd_Renderer* renderer, jd_Font* font, jd_String str, jd
     jd_DrawString(renderer, font, str, window_pos, text_color, wrap_width);
 }
 
+#endif
 
 void jd_DrawRect(jd_Renderer* renderer, jd_V2F window_pos, jd_V2F size, jd_V4F col) {
     f32 x = window_pos.x * renderer->dpi_scaling;
@@ -386,9 +401,14 @@ jd_Renderer* jd_RendererCreate(struct jd_Window* window) {
     renderer->arena = arena;
     renderer->max_texture_layers = max_array_tex_layers;
     renderer->dpi_scaling = 1.0f;
+#if 0
     renderer->fonts = jd_DArrayCreate(256, sizeof(jd_Font));
     renderer->default_font = jd_FontPushFromFile(renderer, jd_StrLit("assets/libmono.ttf"), 42);
+#endif
+    
+#if 0
     renderer->active_texture = renderer->default_font->texture;
+#endif
     renderer->vertices = jd_DArrayCreate(MEGABYTES(64) / sizeof(jd_GLVertex), sizeof(jd_GLVertex));
     renderer->window = window;
     jd_RenderObjects* objects = &renderer->objects;
@@ -423,8 +443,10 @@ jd_Renderer* jd_RendererCreate(struct jd_Window* window) {
 void jd_RendererSetDPIScale(jd_Renderer* renderer, f32 scale) {
     b32 font_refresh = false;
     if (scale != renderer->dpi_scaling) font_refresh = true;
+#if 0
     renderer->dpi_scaling = scale;
     if (font_refresh) jd_RefreshFonts(renderer);
+#endif
 }
 
 void jd_RendererSetRenderSize(jd_Renderer* renderer, jd_V2F render_size) {
