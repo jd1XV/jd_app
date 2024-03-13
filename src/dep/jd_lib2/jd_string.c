@@ -38,6 +38,12 @@ void jd_DStringAppend(jd_DString* d_string, jd_String app) {
     jd_MemCpy(ptr, app.mem, app.count);
 }
 
+void jd_DStringAppendC8(jd_DString* d_string, c8 app) {
+    c8* ptr = jd_ArenaAlloc(d_string->arena, sizeof(app));
+    d_string->mem[d_string->count] = app;
+    d_string->count++;
+}
+
 void jd_DStringRelease(jd_DString* d_string) {
     jd_ArenaRelease(d_string->arena);
 }
@@ -46,6 +52,28 @@ static const c8 _jd_digit_table[36] =  {
     '0', '1',' 2', '3', '4', '5', '6', '7', '8', '9',
     'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'
 };
+
+void jd_DStringAppendU8(jd_DString* d_string, u8 num, u32 radix) {
+    u64 places = 0; 
+    for (u64 quot = num; quot > 0; quot /= radix) {
+        places++;
+    }
+    
+    u8* ptr = jd_ArenaAlloc(d_string->arena, places);
+    d_string->count += places;
+    
+    for (u64 i = 0; i < places; i++) {
+        if (i + 1 == places) {
+            ptr[i] = _jd_digit_table[num];
+            break;
+        }
+        
+        u64 sub = jd_Pow_u64(radix, (places - i) - 1);
+        u64 digit = num / sub;
+        ptr[i] = _jd_digit_table[digit];
+        num -= sub * digit;
+    }
+}
 
 void jd_DStringAppendU32(jd_DString* d_string, u32 num, u32 radix) {
     u64 places = 0; 

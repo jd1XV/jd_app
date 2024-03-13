@@ -51,7 +51,18 @@ jd_Node* _jd_DLLInsertNext(jd_Node* node, void* data, u64 size) {
 }
 
 jd_Node* _jd_DLLInsertLast(jd_Node* node, void* data, u64 size) {
+    if (!node || !node->arena) return 0;
+    jd_Node* old_last = node->last;
+    jd_Arena* arena = node->arena;
     
+    node->last = jd_ArenaAlloc(node->arena, sizeof(jd_Node));
+    node = node->last;
+    
+    jd_MemCpy(node->data, data, size);
+    node->size = size;
+    node->last = old_last;
+    
+    if (old_last) old_last->next = node;
 }
 
 jd_Node* _jd_TreePushChild(jd_Node* node, void* data, u64 size) {
@@ -154,3 +165,11 @@ b32 jd_DArrayClearToIndex(jd_DArray* d_array, u64 index) {
 void jd_DArrayRelease(jd_DArray* d_array) { 
     jd_ArenaRelease(d_array->arena);
 }
+
+u32 jd_HashMapStore(jd_HashMap* map, u32 key, void* data) {
+    
+}
+
+jd_HashMap* jd_HashMapCreate(jd_Arena* arena, u64 cap, u64 stride) {
+    
+} 

@@ -28,7 +28,9 @@ typedef enum jd_ErrorCode {
     jd_Error_FileNotFound,
     jd_Error_EmptyPointer,
     jd_Error_OutOfMemory,
-    jd_Error_API_Misuse,
+    jd_Error_APIMisuse,
+    jd_Error_MissingResource,
+    jd_Error_BadInput,
     jd_Error_Code_Count
 } jd_ErrorCode;
 
