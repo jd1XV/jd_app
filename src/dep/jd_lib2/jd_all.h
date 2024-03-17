@@ -11,10 +11,12 @@
 #include "jd_data_structures.h"
 #include "jd_error.h"
 #include "jd_string.h"
+#include "jd_unicode.h"
 #include "jd_file.h"
 #include "jd_disk.h"
 #include "jd_app.h"
 #include "jd_renderer.h"
+#include "jd_sysinfo.h"
 #ifdef JD_DEBUG
 #include "jd_debug.h"
 #endif

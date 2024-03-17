@@ -9,6 +9,7 @@
 #include <intrin.h>
 #include <shlwapi.h>
 #include <strsafe.h>
+#include <dwmapi.h>
 #define JD_WINDOWS
 
 #endif //JD__WINDOWS_H
