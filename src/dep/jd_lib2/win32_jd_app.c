@@ -80,6 +80,7 @@ void jd_AppUpdatePlatformWindows(jd_App* app) {
     if (last_reload_time < current_reload_time) {
         jd_AppFreeLib(app);
         jd_AppLoadLib(app);
+        app->reloadable_dll_file_time = current_reload_time;
     }
     
     for (u64 i = 0; i < app->window_count; i++) {
@@ -164,6 +165,7 @@ jd_Window* jd_AppPlatformCreateWindow(jd_WindowConfig* config) {
     window->wndclass_str = jd_StringPush(arena, config->id_str);
     window->title = jd_StringPush(arena, config->title);
     window->arena = arena;
+    
     switch (config->app->mode) {
         default: break;
         
@@ -178,14 +180,14 @@ jd_Window* jd_AppPlatformCreateWindow(jd_WindowConfig* config) {
         
         case JD_AM_RELOADABLE: {
             if (config->function_name.count == 0) {
-                jd_LogError("App mode set to JD_WFM_RELOADABLE*, but no function name supplied in jd_WindowConfig", jd_Error_APIMisuse, jd_Error_Fatal);
+                jd_LogError("App mode set to JD_AM_RELOADABLE*, but no function name supplied in jd_WindowConfig", jd_Error_APIMisuse, jd_Error_Fatal);
                 return 0;
             }
             
             window->function_name = jd_StringPush(arena, config->function_name);
             window->func = (_jd_AppWindowFunction)GetProcAddress(config->app->reloadable_dll, config->function_name.mem);
             if (!window->func) {
-                jd_LogError("Could not find function in .dll!", jd_Error_FileNotFound, jd_Error_Fatal);
+                jd_LogError("Could not find specified function in .dll!", jd_Error_FileNotFound, jd_Error_Fatal);
             }
             
         } break;
@@ -219,10 +221,17 @@ jd_Window* jd_AppPlatformCreateWindow(jd_WindowConfig* config) {
                                      NULL        // Additional application data
                                      );
     
-    if (window->handle == NULL)
-    {
+    if (window->handle == NULL) {
         // err
     }
+    
+    
+    if (config->window_style == jd_WS_Dark) {
+        BOOL USE_DARK_MODE = true;
+        BOOL SET_IMMERSIVE_DARK_MODE_SUCCESS = SUCCEEDED(DwmSetWindowAttribute(window->handle, 20,
+                                                                               &USE_DARK_MODE, sizeof(USE_DARK_MODE)));
+    }
+    
     
     window->device_context = GetDC(window->handle);
     

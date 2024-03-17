@@ -7,6 +7,10 @@
 #include "jd_defs.h"
 #endif
 
+#ifndef JD_SYSINFO_H
+#include "jd_sysinfo.h"
+#endif
+
 #ifndef JD_STRING_H
 #include "jd_string.h"
 #endif
@@ -25,7 +29,7 @@ typedef struct jd_Window jd_Window;
 jd_V2F jd_WindowGetDrawSize(jd_Window* window);
 
 typedef struct jd_App jd_App;
-jd_App* jd_AppCreate();
+jd_App* jd_AppCreate(struct jd_AppConfig* config);
 
 typedef void (*jd_AppWindowFunctionPtr)(struct jd_Window* window);
 
@@ -40,12 +44,19 @@ typedef struct jd_AppConfig {
     jd_String package_name;
 } jd_AppConfig;
 
+typedef enum  jd_WindowStyle {
+    jd_WS_Light,
+    jd_WS_Dark,
+    jd_WS_Count
+} jd_WindowStyle;
+
 typedef struct jd_WindowConfig {
     jd_App* app;
     jd_String title;
     jd_String id_str;
     jd_AppWindowFunctionPtr function_ptr;
     jd_String function_name;
+    jd_WindowStyle window_style;
 } jd_WindowConfig;
 
 void       jd_AppUpdatePlatformWindows(jd_App* app);
