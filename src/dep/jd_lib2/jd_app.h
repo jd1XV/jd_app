@@ -27,6 +27,8 @@
 
 typedef struct jd_Window jd_Window;
 jd_V2F jd_WindowGetDrawSize(jd_Window* window);
+u32 jd_WindowGetDPI(jd_Window* window);
+
 
 typedef struct jd_App jd_App;
 jd_App* jd_AppCreate(struct jd_AppConfig* config);

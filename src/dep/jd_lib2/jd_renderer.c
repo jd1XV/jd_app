@@ -39,7 +39,7 @@ jd_String fs_string = jd_StrConst("#version 430\n"
 void jd_ShaderCreate(jd_Renderer* renderer) {
     u32 id = 0;
     id = glCreateProgram();
-    char info_log[512];
+    c8 info_log[512];
     
     u32 vs = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vs, 1, &vs_string.mem, NULL);
@@ -85,25 +85,98 @@ void jd_ShaderCreate(jd_Renderer* renderer) {
 
 #define jd_Default_Face_Point_Size 12
 
-jd_Typeface* jd_TypefaceLoadFromMemory(jd_Renderer* renderer, jd_String id_str, jd_File file, i32 base_point_size) {
+typedef struct _jd_FT_Instance {
+    FT_Library library;
+    b32 init;
+} _jd_FT_Instance;
+
+static jd_ReadOnly _jd_FT_Instance _jd_ft_global_instance = {0};
+
+jd_Typeface* jd_TypefaceLoadFromMemory(jd_Renderer* renderer, jd_String id_str, jd_File file, jd_TypefaceUnicodeRange* range, i32 base_point_size) {
     if (file.size == 0) {
         jd_LogError("File is zero-sized! Did it load correctly?", jd_Error_MissingResource, jd_Error_Common);
         return 0;
     }
+    
+    if (!range)
+        range = &jd_unicode_range_basic_latin;
     
     if (base_point_size == 0)
         base_point_size = jd_Default_Face_Point_Size;
     
     jd_UserLockGet(renderer->font_lock);
     
-    jd_Typeface* face = jd_DArrayPushBack(renderer->fonts, 0);
-    if (!face) {
-        jd_LogError("Could not allocate memory for the typeface.", jd_Error_OutOfMemory, jd_Error_Common);
+    if (!_jd_ft_global_instance.init) {
+        i32 error = FT_Init_FreeType(&_jd_ft_global_instance.library);
+        if (error) {
+            jd_LogError("Could not initialize FreeType library.", jd_Error_OutOfMemory, jd_Error_Critical);
+            jd_UserLockRelease(renderer->font_lock);
+            return 0;
+        }
+        
+        _jd_ft_global_instance.init = true;
+    }
+    
+    FT_Face ft_face = {0};
+    i32 error = FT_New_Memory_Face(_jd_ft_global_instance.library, file.mem, file.size, 0, &ft_face);
+    if (error) {
+        jd_LogError("Could not load font file with FreeType.", jd_Error_BadInput, jd_Error_Critical);
+        jd_UserLockRelease(renderer->font_lock);
         return 0;
     }
     
     
+    jd_Typeface* face = jd_DArrayPushBack(renderer->fonts, 0);
+    
+    if (!face) {
+        jd_LogError("Could not allocate memory for the typeface.", jd_Error_OutOfMemory, jd_Error_Common);
+        jd_UserLockRelease(renderer->font_lock);
+        return 0;
+    }
+    
+    u32 dpi = jd_WindowGetDPI(renderer->window);
+    error = error = FT_Set_Char_Size(ft_face,    /* handle to face object         */
+                                     0,       /* char_width in 1/64 of points  */
+                                     base_point_size * 64,   /* char_height in 1/64 of points */
+                                     dpi,     /* horizontal device resolution  */
+                                     dpi);    /* vertical device resolution    */
+    
+    
+    
+    
     jd_UserLockRelease(renderer->font_lock);
+    
+#if 0
+    FT_UShort         units_per_EM;
+    FT_Short          ascender;
+    FT_Short          descender;
+    FT_Short          height;
+    
+    FT_Short          max_advance_width;
+    FT_Short          max_advance_height;
+    
+    typedef struct  FT_Size_Metrics_
+    {
+        FT_UShort  x_ppem;      /* horizontal pixels per EM               */
+        FT_UShort  y_ppem;      /* vertical pixels per EM                 */
+        
+        FT_Fixed   x_scale;     /* scaling values used to convert font    */
+        FT_Fixed   y_scale;     /* units to 26.6 fractional pixels        */
+        
+        FT_Pos     ascender;    /* ascender in 26.6 frac. pixels          */
+        FT_Pos     descender;   /* descender in 26.6 frac. pixels         */
+        FT_Pos     height;      /* text height in 26.6 frac. pixels       */
+        FT_Pos     max_advance; /* max horizontal advance, in 26.6 pixels */
+        
+    } FT_Size_Metrics;
+#endif
+    
+    face->ascent = ft_face->size->metrics.ascender * ft_face->size->metrics.y_scale;
+    face->descent = ft_face->size->metrics.descender *  ft_face->size->metrics.y_scale;
+    face->line_adv = ft_face->max_advance_height *  ft_face->size->metrics.y_scale;
+    face->glyph_arena = jd_ArenaCreate(0, 0);
+    
+    face->glyphs = jd_ArenaAlloc(face->glyph_arena, sizeof(jd_Glyph*) * (range->end + 1));
 }
 
 #if 0

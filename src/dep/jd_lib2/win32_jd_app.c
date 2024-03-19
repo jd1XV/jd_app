@@ -394,3 +394,8 @@ jd_App* jd_AppCreate(jd_AppConfig* config) {
 jd_V2F jd_WindowGetDrawSize(jd_Window* window) {
     return window->size;
 }
+
+u32 jd_WindowGetDPI(jd_Window* window) {
+    u32 dpi = GetDpiForWindow(window->handle);
+    return dpi;
+}
