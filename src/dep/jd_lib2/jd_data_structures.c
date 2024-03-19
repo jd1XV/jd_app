@@ -107,6 +107,8 @@ void* jd_DArrayGetBack(jd_DArray* d_array) {
 
 void* jd_DArrayPushBack(jd_DArray* d_array, void* data) { 
     void* ptr = jd_ArenaAlloc(d_array->arena, d_array->stride);
+    if (!ptr) return 0;
+    
     if (data != 0) {
         jd_MemCpy(ptr, data, d_array->stride);
     }

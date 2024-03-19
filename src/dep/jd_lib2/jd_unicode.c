@@ -34,7 +34,7 @@ static inline void _jd_UTF8toUTF32(jd_UTFDecodedString* dec_str, jd_Arena* arena
         u32 length = length_table[input.mem[i] >> 3];
         
         if (i + length > input.count) {
-            //err
+            jd_LogError("Stream too short for UTF8 value", jd_Error_BadInput, jd_Error_Critical);
         }
         
         u32 codepoint = 0;
@@ -117,11 +117,7 @@ jd_String jd_UnicodeEncodeUTF32toUTF8(jd_Arena* arena, jd_UTFDecodedString input
     for (u64 i = 0; i < input.count; i++) {
         u32 codepoint = input.utf32[i];
         
-        if (codepoint == 172) {
-            int x = 0;
-        }
-        
-        if (codepoint < (0x7F)) {
+        if (codepoint <= (0x7F)) {
             str.mem[real_count] = codepoint;
             real_count++;
         }

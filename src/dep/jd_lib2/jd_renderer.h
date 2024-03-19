@@ -42,6 +42,9 @@ typedef struct jd_Glyph {
     jd_V2F offset;
     jd_V2F size;
     f32 h_advance;
+    
+    u32 texture_index;
+    u32 depth;
 } jd_Glyph;
 
 typedef struct jd_TypefaceUnicodeRange {
@@ -49,9 +52,12 @@ typedef struct jd_TypefaceUnicodeRange {
     u32 end;
 } jd_TypefaceUnicodeRange;
 
-static jd_ReadOnly jd_TypefaceUnicodeRange jd_typeface_range_end = {0, 0};
+static jd_ReadOnly jd_TypefaceUnicodeRange jd_unicode_range_end = {0, 0};
+static jd_ReadOnly jd_TypefaceUnicodeRange jd_unicode_range_basic_latin = {0, 127};
+static jd_ReadOnly jd_TypefaceUnicodeRange jd_unicode_range_bmp = {0, 0xFFFF};
 
 typedef struct jd_Typeface {
+    jd_String id_str;
     f32 face_size;
     
     f32 ascent;
@@ -59,7 +65,7 @@ typedef struct jd_Typeface {
     f32 line_gap;
     f32 line_adv;
     
-    jd_Glyph* basic_glyphs; // glyphs for up to the first 2048 codepoints, loaded by default
+    jd_Glyph** glyphs;  // array of glyph pointers, sized per the provided unicode range. bmp takes about 512kb to store directly.
     
     u32 gl_texture;
     u32 texture_width;
@@ -126,10 +132,10 @@ typedef struct jd_RenderBox {
 
 typedef struct jd_Renderer {
     jd_Arena* arena;
+    
+    jd_UserLock* font_lock; // should never collide in single threaded code, and makes multithreaded code safe. who
+    //                         wants to load a font on a ui thread anyway?
     jd_DArray* fonts; // type: jd_Font
-#if 0
-    jd_Font* default_font;
-#endif
     
     jd_DArray* vertices; // type: jd_GLVertex
     jd_RenderObjects objects;
