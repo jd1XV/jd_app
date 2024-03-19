@@ -6,6 +6,8 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
+
+
 jd_String vs_string = jd_StrConst("#version 430\n"
                                   "layout (location = 0) in vec3 vert_xyz;\n"
                                   "layout (location = 1) in vec3 vert_uvw;\n"
@@ -81,13 +83,27 @@ void jd_ShaderCreate(jd_Renderer* renderer) {
 #define _JD_RENDER_FONT_TEXTURE_HEIGHT 256
 #define _JD_RENDER_FONT_TEXTURE_WIDTH 128
 
-jd_Typeface* jd_TypefaceLoadFromMemory(jd_Renderer* renderer, jd_File file, i32 base_point_size) {
+#define jd_Default_Face_Point_Size 12
+
+jd_Typeface* jd_TypefaceLoadFromMemory(jd_Renderer* renderer, jd_String id_str, jd_File file, i32 base_point_size) {
     if (file.size == 0) {
         jd_LogError("File is zero-sized! Did it load correctly?", jd_Error_MissingResource, jd_Error_Common);
         return 0;
     }
     
+    if (base_point_size == 0)
+        base_point_size = jd_Default_Face_Point_Size;
     
+    jd_UserLockGet(renderer->font_lock);
+    
+    jd_Typeface* face = jd_DArrayPushBack(renderer->fonts, 0);
+    if (!face) {
+        jd_LogError("Could not allocate memory for the typeface.", jd_Error_OutOfMemory, jd_Error_Common);
+        return 0;
+    }
+    
+    
+    jd_UserLockRelease(renderer->font_lock);
 }
 
 #if 0
