@@ -29,7 +29,7 @@ inline void _jd_Internal_ArenaDecommit(jd_Arena* arena, u64 pos, u64 size) {
 jd_Arena* jd_ArenaCreate(u64 capacity, u64 commit_page_size) {
     if (capacity == 0) capacity = GIGABYTES(4);
     if (capacity < KILOBYTES(64)) capacity = KILOBYTES(64);
-    if (commit_page_size == 0) commit_page_size = jd_Max(capacity / 8096, KILOBYTES(64));
+    if (commit_page_size == 0) commit_page_size = KILOBYTES(64);
     
     jd_Arena* arena = (jd_Arena*)_jd_Internal_ArenaReserve(capacity, commit_page_size);
     
@@ -78,6 +78,34 @@ void jd_ArenaPopTo(jd_Arena* arena, u64 pos) {
 
 void jd_ArenaRelease(jd_Arena* arena) {
     VirtualFree(arena, 0, MEM_RELEASE);
+}
+
+void jd_MemSet(u8* dest, const u8 val, u64 size) {
+    jd_CPUFlags flags = jd_SysInfoGetCPUFlags();
+    u64 index = 0;
+    
+    if (jd_CPUFlagIsSet(flags, jd_CPUFlags_SupportsAVX)) {
+        __m256i val32 = _mm256_set1_epi8(val);
+        for (; index + 32 <= size; index += 32) {
+            _mm256_storeu_si256((__m256i*)(dest + index), val32);
+        }
+        
+    }
+    
+    if (index == size) return;
+    
+    if (jd_CPUFlagIsSet(flags, jd_CPUFlags_SupportsSSE2)) {
+        __m128i val16 = _mm_set1_epi8(val);
+        for (; index + 16 <= size; index += 16) {
+            _mm_storeu_si128((__m128i*)(dest + index), val16);
+        }
+    }
+    
+    if (index == size) return;
+    
+    for (; index < size; index++) {
+        dest[index] = val;
+    }
 }
 
 #define jd_BitScanMSB32(in, mask) _BitScanReverse(in, mask)

@@ -114,6 +114,10 @@ typedef struct jd_V2I32 {
 #pragma section("jd_readonlysec", read)
 #define jd_ReadOnly __declspec(allocate("jd_readonlysec"))
 
+#define jd_ExportFn __declspec(dllexport)
+
+#define jd_ForceInline __forceinline
+
 #ifdef JD_DEBUG
 #include <assert.h>
 #define jd_Assert(x) assert(x)

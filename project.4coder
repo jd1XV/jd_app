@@ -20,7 +20,6 @@ load_paths_base = {
  { .path = "C:\Code\jdat", .relative = false, .recursive = true, },
  { .path = "C:\Code\jd_thread", .relative = false, .recursive = true, },
  { .path = "C:\Code\jdated\src", .relative = false, .recursive = true, },
- { .path = "C:\Program Files (x86)\Windows Kits\10\Include\10.0.19041.0", .relative = false, .recursive = true, },
  { .path = "C:\Code\freetype-2.13.2\include", .relative = false, .recursive = true, }
 
 };
@@ -37,7 +36,7 @@ commands = {
  .build_release = { .out = "*compilation*", .footer_panel = false, .save_dirty_files = true,
    .win = "call build.bat -r"},
  .build_lib = { .out = "*compilation*", .footer_panel = false, .save_dirty_files = true,
-   .win = "call build_lib.bat -r"},
+   .win = "call build_lib.bat -d"},
  .run = { .out = "*compilation*", .footer_panel = false, .save_dirty_files = false,
    .win = "w:\remedy\remedybg.exe start-debugging"},
  .open_remedy = { .footer_panel = false, .save_dirty_files = true,

@@ -3,7 +3,8 @@
 #ifndef JD_LOCKS_H
 #define JD_LOCKS_H
 
-#ifndef JD_MEMORY_H
+#ifndef JD_UNITY_H
+#include "jd_defs.h"
 #include "jd_memory.h"
 #endif
 

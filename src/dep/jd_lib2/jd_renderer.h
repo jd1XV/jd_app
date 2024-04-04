@@ -1,35 +1,14 @@
 #ifndef JD_RENDERER_H
 #define JD_RENDERER_H
 
-#ifndef JD_DEFS_H
+#ifndef JD_UNITY_H
 #include "jd_defs.h"
-#endif
-
-#ifndef JD_FILE_H
 #include "jd_file.h"
-#endif
-
-#ifndef JD_DISK_H
 #include "jd_disk.h"
-#endif
-
-#ifndef JD_STRING_H
 #include "jd_string.h"
-#endif
-
-#ifndef JD_MEMORY_H
 #include "jd_memory.h"
-#endif
-
-#ifndef JD_DATA_STRUCTURES_H
 #include "jd_data_structures.h"
-#endif
-
-#ifndef JD_DISK_H
 #include "jd_disk.h"
-#endif
-
-#ifndef JD_APP_H
 #include "jd_app.h"
 #endif
 
@@ -43,8 +22,14 @@ typedef struct jd_Glyph {
     jd_V2F size;
     f32 h_advance;
     
+    u32 codepoint;
+    
+    u32 hash;
+    
+    struct jd_Glyph* next_with_same_hash;
+    
+    u32 texture_page;
     u32 texture_index;
-    u32 depth;
 } jd_Glyph;
 
 typedef struct jd_TypefaceUnicodeRange {
@@ -56,7 +41,7 @@ static jd_ReadOnly jd_TypefaceUnicodeRange jd_unicode_range_basic_latin = {0, 12
 static jd_ReadOnly jd_TypefaceUnicodeRange jd_unicode_range_bmp = {0, 0xFFFF};
 
 typedef struct jd_Typeface {
-    jd_Arena* glyph_arena;
+    jd_Arena* arena;
     jd_String id_str;
     f32 face_size;
     
@@ -65,13 +50,18 @@ typedef struct jd_Typeface {
     f32 line_gap;
     f32 line_adv;
     
-    jd_Glyph** glyphs;  // array of glyph pointers, sized per the provided unicode range. bmp takes about 512kb to store directly.
+    jd_TypefaceUnicodeRange range;
     
-    u32 gl_texture;
+    jd_Glyph* glyphs; // array of glyphs
+    u64 glyph_count;
+    
+    u32 gl_texture[1024];
+    u32 gl_texture_count;
     u32 texture_width;
     u32 texture_height;
     u8* white_bitmap;
 } jd_Typeface;
+
 
 #if 0
 typedef struct jd_Font {
@@ -132,6 +122,7 @@ typedef struct jd_RenderBox {
 
 typedef struct jd_Renderer {
     jd_Arena* arena;
+    jd_Arena* frame_arena;
     
     jd_UserLock* font_lock; // should never collide in single threaded code, and makes multithreaded code safe. who
     //                         wants to load a font on a ui thread anyway?
@@ -146,24 +137,22 @@ typedef struct jd_Renderer {
     u32 max_texture_layers;
     u32 active_texture;
     
+    jd_Typeface* default_face;
+    
     struct jd_Window* window;
     
     struct jd_Window* linked_window;
 } jd_Renderer;
 
-#if 0
-jd_Font* jd_FontPushFromFile(jd_Renderer* renderer, jd_String ttf_path, i32 face_size_pixels);
-#endif
 jd_Renderer* jd_RendererCreate();
-#if 0
-void jd_DrawString(jd_Renderer* renderer, jd_Font* font, jd_String str, jd_V2F window_pos, jd_V4F color, f32 wrap_width);
-void jd_DrawStringWithBG(jd_Renderer* renderer, jd_Font* font, jd_String str, jd_V2F window_pos, jd_V4F text_color, jd_V4F bg_color, f32 wrap_width);
-#endif
-void jd_DrawRect(jd_Renderer* renderer, jd_V2F window_pos, jd_V2F size, jd_V4F col);
-void jd_RendererSetDPIScale(jd_Renderer* renderer, f32 scale);
-void jd_RendererSetRenderSize(jd_Renderer* renderer, jd_V2F render_size);
-void jd_RefreshFonts(jd_Renderer* renderer);
-void jd_RendererDraw(jd_Renderer* renderer);
+
+jd_ExportFn void jd_DrawString(jd_Renderer* renderer, jd_Typeface* face, jd_String str, jd_V2F window_pos, jd_V4F color, f32 wrap_width);
+jd_ExportFn void jd_DrawStringWithBG(jd_Renderer* renderer, jd_Typeface* face, jd_String str, jd_V2F window_pos, jd_V4F text_color, jd_V4F bg_color, f32 wrap_width);
+jd_ExportFn void jd_DrawRect(jd_Renderer* renderer, jd_V2F window_pos, jd_V2F size, jd_V4F col);
+jd_ExportFn void jd_RendererSetDPIScale(jd_Renderer* renderer, f32 scale);
+jd_ExportFn void jd_RendererSetRenderSize(jd_Renderer* renderer, jd_V2F render_size);
+jd_ExportFn void jd_RefreshFonts(jd_Renderer* renderer);
+jd_ExportFn void jd_RendererDraw(jd_Renderer* renderer);
 
 #ifdef JD_IMPLEMENTATION
 #include "jd_renderer.c"

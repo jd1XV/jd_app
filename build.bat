@@ -12,9 +12,6 @@ set srcfiles=main.c dep\glad\glad_wgl.c dep\glad\glad.c
 set subsys="windows"
 
 set includes= ^
-/I"C:\Code\jd_lib\src" ^
-/I"C:\Code\jdat" ^
-/I"C:\Code\jd_thread" ^
 /I"C:\Code\freetype-2.13.2\include"
 
 set compflags= ^

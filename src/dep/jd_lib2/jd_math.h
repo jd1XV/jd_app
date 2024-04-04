@@ -3,26 +3,15 @@
 #ifndef JD_MATH_H
 #define JD_MATH_H
 
-#ifndef JD_DEFS_H
+#ifndef JD_UNITY_H
 #include "jd_defs.h"
 #endif
 
 u64 jd_Pow_u64(u64 b, u64 e);
+#define jd_Abs(x) (x < 0) ? x * -1 : x
 
 #ifdef JD_IMPLEMENTATION
-
-u64 jd_Pow_u64(u64 b, u64 e) {
-    u64 x = 0;
-    if (e > 0) {
-        x = b;
-    }
-    
-    for (u64 i = 1; i < e; i++) {
-        x *= b;
-    }
-    return x;
-}
-
+#include "jd_math.c"
 #endif // JD_IMPLEMENTATION
 
 #endif //JD_MATH_H

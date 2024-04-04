@@ -3,24 +3,11 @@
 #ifndef JD_ERROR_H
 #define JD_ERROR_H
 
-#ifndef JD_DEFS_H
+#ifndef JD_UNITY_H
 #include "jd_defs.h"
-#endif 
-
-#ifndef JD_LOCKS_H
 #include "jd_locks.h"
-#endif
-
-#ifndef JD_STRING_H
 #include "jd_string.h"
-#endif
-
-#ifndef JD_MEMORY_H
 #include "jd_memory.h"
-#endif
-
-#ifndef JD_DEBUG_H
-#include "jd_debug.h"
 #endif
 
 typedef enum jd_ErrorCode {

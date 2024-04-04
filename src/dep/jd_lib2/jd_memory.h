@@ -3,9 +3,10 @@
 #ifndef JD_MEMORY_H
 #define JD_MEMORY_H
 
-#ifndef JD_DEFS_H
+#ifndef JD_UNITY_H
 #include "jd_defs.h"
-#endif 
+#include "jd_sysinfo.h"
+#endif
 
 typedef struct jd_Arena {
     u8* mem;
@@ -24,6 +25,7 @@ void jd_ArenaRelease(jd_Arena* arena);
 void jd_ZeroMemory(void* dest, u64 size);
 void jd_MemCpy(void* dest, const void* src, u64 size);
 void jd_MemMove(void* dest, const void* src, u64 count);
+void jd_MemSet(void* dest, u8 val, u64 size);
 
 #ifdef JD_IMPLEMENTATION
 

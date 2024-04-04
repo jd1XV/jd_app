@@ -1,12 +1,10 @@
-#define STB_TRUETYPE_IMPLEMENTATION
-#include "dep/stb_truetype.h"
+
+
 #include "dep/glad/glad_wgl.h"
 #include "dep/glad/glad.h"
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
-
-
 
 jd_String vs_string = jd_StrConst("#version 430\n"
                                   "layout (location = 0) in vec3 vert_xyz;\n"
@@ -80,8 +78,9 @@ void jd_ShaderCreate(jd_Renderer* renderer) {
     renderer->objects.shader = id;
 }
 
-#define _JD_RENDER_FONT_TEXTURE_HEIGHT 256
-#define _JD_RENDER_FONT_TEXTURE_WIDTH 128
+#define jd_Render_Font_Texture_Height 256
+#define jd_Render_Font_Texture_Width 128
+#define jd_Render_Font_Texture_Depth 1024 // This should cover the vast majority of modern devices, but the standard *does* only gaurantee 256.
 
 #define jd_Default_Face_Point_Size 12
 
@@ -90,7 +89,51 @@ typedef struct _jd_FT_Instance {
     b32 init;
 } _jd_FT_Instance;
 
-static jd_ReadOnly _jd_FT_Instance _jd_ft_global_instance = {0};
+static _jd_FT_Instance _jd_ft_global_instance = {0};
+
+#define _jd_GlyphHashTableLimit KILOBYTES(64)
+
+u32 jd_GlyphHashGetIndexForCodepoint(u32 codepoint) {
+    if (codepoint <= 128) 
+        return codepoint;
+    
+    u32 hash = jd_HashU32toU32(codepoint, 5700877729);
+    return hash & _jd_GlyphHashTableLimit - 1;
+}
+
+jd_Glyph* jd_TypefaceGetGlyph(jd_Typeface* face, u32 codepoint) {
+    if (codepoint > face->range.end) {
+        return 0;
+    }
+    
+    u32 hash = jd_GlyphHashGetIndexForCodepoint(codepoint);
+    jd_Glyph* glyph = &face->glyphs[hash];
+    while (glyph && glyph->codepoint != codepoint) {
+        glyph = glyph->next_with_same_hash;
+    }
+    
+    return glyph;
+}
+
+jd_Glyph* jd_TypefaceInsertGlyph(jd_Typeface* face, u32 codepoint) {
+    if (codepoint > face->range.end) {
+        return 0;
+    }
+    u32 hash = jd_GlyphHashGetIndexForCodepoint(codepoint);
+    jd_Glyph* glyph = &face->glyphs[hash];
+    if (glyph->codepoint == 0) {
+        glyph->codepoint = codepoint;
+        return glyph;
+    }
+    
+    while (glyph->next_with_same_hash != 0)
+        glyph = glyph->next_with_same_hash;
+    
+    glyph->next_with_same_hash = jd_ArenaAlloc(face->arena, sizeof(jd_Glyph));
+    glyph = glyph->next_with_same_hash;
+    glyph->codepoint = codepoint;
+    return glyph;
+}
 
 jd_Typeface* jd_TypefaceLoadFromMemory(jd_Renderer* renderer, jd_String id_str, jd_File file, jd_TypefaceUnicodeRange* range, i32 base_point_size) {
     if (file.size == 0) {
@@ -125,6 +168,11 @@ jd_Typeface* jd_TypefaceLoadFromMemory(jd_Renderer* renderer, jd_String id_str, 
         return 0;
     }
     
+    if (ft_face->num_glyphs == 0) {
+        jd_LogError("Font does not contain any glyphs!", jd_Error_BadInput, jd_Error_Critical);
+        jd_UserLockRelease(renderer->font_lock);
+        return 0;
+    }
     
     jd_Typeface* face = jd_DArrayPushBack(renderer->fonts, 0);
     
@@ -135,200 +183,116 @@ jd_Typeface* jd_TypefaceLoadFromMemory(jd_Renderer* renderer, jd_String id_str, 
     }
     
     u32 dpi = jd_WindowGetDPI(renderer->window);
-    error = error = FT_Set_Char_Size(ft_face,    /* handle to face object         */
-                                     0,       /* char_width in 1/64 of points  */
-                                     base_point_size * 64,   /* char_height in 1/64 of points */
-                                     dpi,     /* horizontal device resolution  */
-                                     dpi);    /* vertical device resolution    */
-    
-    
-    
+    error = FT_Set_Char_Size(ft_face,    /* handle to face object         */
+                             0,       /* char_width in 1/64 of points  */
+                             base_point_size * 64,   /* char_height in 1/64 of points */
+                             dpi,     /* horizontal device resolution  */
+                             dpi);    /* vertical device resolution    */
     
     jd_UserLockRelease(renderer->font_lock);
     
-#if 0
-    FT_UShort         units_per_EM;
-    FT_Short          ascender;
-    FT_Short          descender;
-    FT_Short          height;
+    face->ascent = ft_face->size->metrics.ascender / 64;
+    face->descent = ft_face->size->metrics.descender / 64 ;
+    face->line_adv = face->ascent - face->descent;
+    face->arena = jd_ArenaCreate(0, 0);
+    face->range = *range;
     
-    FT_Short          max_advance_width;
-    FT_Short          max_advance_height;
+    // allocate the first page of the texture
+    // setup textures
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glGenTextures(1, &face->gl_texture[0]);
+    //glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D_ARRAY, face->gl_texture[0]);
+    glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA, jd_Render_Font_Texture_Width, jd_Render_Font_Texture_Height, jd_Render_Font_Texture_Depth, 0, GL_RED, GL_UNSIGNED_BYTE, 0);
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LEVEL, 3);
     
-    typedef struct  FT_Size_Metrics_
+    face->texture_width = jd_Render_Font_Texture_Width;
+    face->texture_height = jd_Render_Font_Texture_Height;
+    face->glyph_count = 0;
+    
+    u32 texture_index = 0;
+    
+    u32 glyph_texture_index = 0;
+    u32 glyph_texture_page = 0;
+    
+    // white space for drawing plain colored rects
     {
-        FT_UShort  x_ppem;      /* horizontal pixels per EM               */
-        FT_UShort  y_ppem;      /* vertical pixels per EM                 */
-        
-        FT_Fixed   x_scale;     /* scaling values used to convert font    */
-        FT_Fixed   y_scale;     /* units to 26.6 fractional pixels        */
-        
-        FT_Pos     ascender;    /* ascender in 26.6 frac. pixels          */
-        FT_Pos     descender;   /* descender in 26.6 frac. pixels         */
-        FT_Pos     height;      /* text height in 26.6 frac. pixels       */
-        FT_Pos     max_advance; /* max horizontal advance, in 26.6 pixels */
-        
-    } FT_Size_Metrics;
-#endif
-    
-    face->ascent = ft_face->size->metrics.ascender * ft_face->size->metrics.y_scale;
-    face->descent = ft_face->size->metrics.descender *  ft_face->size->metrics.y_scale;
-    face->line_adv = ft_face->max_advance_height *  ft_face->size->metrics.y_scale;
-    face->glyph_arena = jd_ArenaCreate(0, 0);
-    
-    face->glyphs = jd_ArenaAlloc(face->glyph_arena, sizeof(jd_Glyph*) * (range->end + 1));
-}
-
-#if 0
-jd_Font* jd_FontPushFromFile(jd_Renderer* renderer, jd_String ttf_path, i32 face_size_pixels) {
-    if (!jd_DiskPathExists(ttf_path)) return NULL;
-    jd_Font* font = jd_DArrayPushBack(renderer->fonts, NULL);
-    font->ttf_file = jd_DiskFileReadFromPath(renderer->arena, ttf_path);
-    font->face_size = face_size_pixels;
-    jd_File ttf_file = font->ttf_file;
-    if (ttf_file.size == 0) {
-        jd_DArrayPopIndex(renderer->fonts, renderer->fonts->view.count - 1);
+        face->white_bitmap = jd_ArenaAlloc(renderer->arena, sizeof(u32) * face->texture_width * face->texture_height);
+        jd_MemSet(face->white_bitmap, 0xFF, sizeof(u32) * face->texture_width * face->texture_height);
+        glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, 0, jd_Render_Font_Texture_Width, jd_Render_Font_Texture_Height, 1, GL_RED, GL_UNSIGNED_BYTE, face->white_bitmap);
+        glyph_texture_index++;
     }
-    else {
-        // setup textures
-        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-        glGenTextures(1, &font->texture);
-        //glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D_ARRAY, font->texture);
-        glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA, _JD_RENDER_FONT_TEXTURE_WIDTH, _JD_RENDER_FONT_TEXTURE_HEIGHT, 1024, 0, GL_RED, GL_UNSIGNED_BYTE, 0);
-        glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LEVEL, 3);
-        
-        font->texture_width = _JD_RENDER_FONT_TEXTURE_WIDTH;
-        font->texture_height = _JD_RENDER_FONT_TEXTURE_HEIGHT;
-        
-        // white space for drawing plain colored rects
-        {
-            font->white_bitmap = jd_ArenaAlloc(renderer->arena, sizeof(u32) * font->texture_width * font->texture_height);
-            __m256i white = _mm256_set1_epi8(0xff);
-            for (u64 i = 0; i < _JD_RENDER_FONT_TEXTURE_WIDTH * _JD_RENDER_FONT_TEXTURE_HEIGHT; i += 32) {
-                
-                _mm256_storeu_si256 ((__m256i*)(font->white_bitmap + i), white);
+    
+    face->glyphs = jd_ArenaAlloc(face->arena, sizeof(jd_Glyph) * _jd_GlyphHashTableLimit);
+    
+    for (u32 i = 0; i < range->end; i++) {
+        u32 glyph_index = FT_Get_Char_Index(ft_face, i);
+        if (glyph_index && (FT_Load_Glyph(ft_face, glyph_index, FT_LOAD_DEFAULT) == 0)) {
+            if (FT_Render_Glyph(ft_face->glyph, FT_RENDER_MODE_NORMAL) != 0) {
+                jd_LogError("Glyph was present but couldn't be rasterized!", jd_Error_BadInput, jd_Error_Common);
+                continue;
             }
-            glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, 0, _JD_RENDER_FONT_TEXTURE_WIDTH, _JD_RENDER_FONT_TEXTURE_HEIGHT, 1, GL_RED, GL_UNSIGNED_BYTE, font->white_bitmap);
-        }
-        
-        stbtt_fontinfo stb_font;
-        if (stbtt_InitFont(&stb_font, ttf_file.mem, stbtt_GetFontOffsetForIndex(ttf_file.mem, 0))) {
             
-            f32 scale = stbtt_ScaleForPixelHeight(&stb_font, face_size_pixels);
-            f32 em_scale = stbtt_ScaleForMappingEmToPixels(&stb_font, face_size_pixels);
+            jd_Assert(ft_face->glyph->bitmap.width <= jd_Render_Font_Texture_Width);
+            jd_Assert(ft_face->glyph->bitmap.rows <= jd_Render_Font_Texture_Height);
             
-            i32 ascent, descent, gap;
-            stbtt_GetFontVMetrics(&stb_font, &ascent, &descent, &gap);
+            jd_Glyph* glyph = jd_TypefaceInsertGlyph(face, i);
             
-            font->ascent = ascent * em_scale;
-            font->descent = descent * em_scale;
-            font->line_gap = gap * em_scale;
-            font->line_adv = (font->ascent - font->descent) + font->line_gap;
+            glyph->size.w = ft_face->glyph->bitmap.width;
+            glyph->size.h = ft_face->glyph->bitmap.rows;
+            glyph->offset.x = ft_face->glyph->bitmap_left;
+            glyph->offset.y = -ft_face->glyph->bitmap_top;
+            glyph->h_advance = ft_face->glyph->metrics.horiAdvance / 64;
             
-            jd_Glyph* glyph_ptr = font->glyphs + 32;
-            f32* advance_ptr = font->advances + 32;
-            
-            for (u32 i = 32; i < 1024; i++, advance_ptr++, glyph_ptr++) {
-                i32 w = 0;
-                i32 h = 0;
-                i32 xoff = 0;
-                i32 yoff = 0;
+            u8* bitmap = ft_face->glyph->bitmap.buffer;
+            if (bitmap) {
+                glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, glyph_texture_index, glyph->size.w, glyph->size.h, 1, GL_RED, GL_UNSIGNED_BYTE, face->white_bitmap);
+                glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, glyph_texture_index, glyph->size.w, glyph->size.h, 1, GL_RED, GL_UNSIGNED_BYTE, bitmap);
                 
-                u8* bitmap = stbtt_GetCodepointBitmap(&stb_font, 0, scale, i, &w, &h, &xoff, &yoff);
-                if (bitmap) {
-                    jd_Assert(w <= _JD_RENDER_FONT_TEXTURE_WIDTH);
-                    jd_Assert(h <= _JD_RENDER_FONT_TEXTURE_HEIGHT);
-                    glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, i, w, h, 1, GL_RED, GL_UNSIGNED_BYTE, bitmap);
-                    stbtt_FreeBitmap(bitmap, 0);
+                face->glyph_count++;
+                
+                glyph->texture_page = glyph_texture_page;
+                glyph->texture_index = glyph_texture_index;
+                
+                glyph_texture_index++;
+                
+                if ((glyph_texture_index > 0) && (glyph_texture_index % jd_Render_Font_Texture_Depth) == 0) {
+                    glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
+                    //glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+                    
+                    //glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+                    glGenTextures(1, &face->gl_texture[++glyph_texture_page]);
+                    //glActiveTexture(GL_TEXTURE0);
+                    glBindTexture(GL_TEXTURE_2D_ARRAY, face->gl_texture[glyph_texture_page]);
+                    glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA, jd_Render_Font_Texture_Width, jd_Render_Font_Texture_Height, jd_Render_Font_Texture_Depth, 0, GL_RED, GL_UNSIGNED_BYTE, 0);
+                    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_REPEAT);
+                    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_REPEAT);
+                    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+                    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LEVEL, 3);
+                    glyph_texture_index = 0;
                 }
-                
-                glyph_ptr->offset.x = xoff;
-                glyph_ptr->offset.y = yoff;
-                glyph_ptr->size.w = w;
-                glyph_ptr->size.h = h;
-                
-                i32 advance = 0;
-                i32 lsb = 0;
-                stbtt_GetCodepointHMetrics(&stb_font, i, &advance, &lsb);
-                
-                *advance_ptr = advance*em_scale;
-            }
-        }
-        
-        glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
-    }
-    return font;
-}
-
-
-void jd_RefreshFonts(jd_Renderer* renderer) {
-    for (u64 i = 0; i < renderer->fonts->view.count; i++) {
-        jd_Font* font = jd_DArrayGetIndex(renderer->fonts, i);
-        glBindTexture(GL_TEXTURE_2D_ARRAY, font->texture);
-        stbtt_fontinfo stb_font;
-        if (stbtt_InitFont(&stb_font, font->ttf_file.mem, stbtt_GetFontOffsetForIndex(font->ttf_file.mem, 0))) {
-            
-            f32 scale = stbtt_ScaleForPixelHeight(&stb_font, font->face_size * renderer->dpi_scaling);
-            f32 em_scale = stbtt_ScaleForMappingEmToPixels(&stb_font, font->face_size * renderer->dpi_scaling);
-            
-            i32 ascent, descent, gap;
-            stbtt_GetFontVMetrics(&stb_font, &ascent, &descent, &gap);
-            
-            font->ascent = ascent * em_scale;
-            font->descent = descent * em_scale;
-            font->line_gap = gap * em_scale;
-            font->line_adv = (font->ascent - font->descent) + font->line_gap;
-            
-            jd_Glyph* glyph_ptr = font->glyphs + 32;
-            f32* advance_ptr = font->advances + 32;
-            
-            for (u32 i = 32; i < 1024; i++, advance_ptr++, glyph_ptr++) {
-                i32 w = 0;
-                i32 h = 0;
-                i32 xoff = 0;
-                i32 yoff = 0;
-                
-                u8* bitmap = stbtt_GetCodepointBitmap(&stb_font, 0, scale, i, &w, &h, &xoff, &yoff);
-                if (bitmap) {
-                    jd_Assert(w <= _JD_RENDER_FONT_TEXTURE_WIDTH);
-                    jd_Assert(h <= _JD_RENDER_FONT_TEXTURE_HEIGHT);
-                    glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, i, w, h, 1, GL_RED, GL_UNSIGNED_BYTE, font->white_bitmap);
-                    glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, i, w, h, 1, GL_RED, GL_UNSIGNED_BYTE, bitmap);
-                    stbtt_FreeBitmap(bitmap, 0);
-                }
-                
-                glyph_ptr->offset.x = xoff;
-                glyph_ptr->offset.y = yoff;
-                glyph_ptr->size.w = w;
-                glyph_ptr->size.h = h;
-                
-                i32 advance = 0;
-                i32 lsb = 0;
-                stbtt_GetCodepointHMetrics(&stb_font, i, &advance, &lsb);
-                
-                *advance_ptr = advance*em_scale;
             }
             
         }
-        glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
     }
     
+    FT_Done_Face(ft_face);
+    glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
+    glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+    
+    return face;
 }
 
-void jd_Internal_DrawGlyph(jd_Renderer* renderer, jd_Font* font, jd_V2F window_pos, jd_V4F col, c8 glyph_char) {
-    if (renderer->active_texture != font->texture) {
+void jd_Internal_DrawGlyph(jd_Renderer* renderer, jd_Typeface* face, jd_V2F window_pos, jd_V4F col, jd_Glyph* g) {
+    if (renderer->active_texture != face->gl_texture[g->texture_page]) {
         jd_RendererDraw(renderer);
-        renderer->active_texture = font->texture;
+        renderer->active_texture = face->gl_texture[g->texture_page];
     }
-    
-    if (glyph_char > 1024) glyph_char = 0;
-    
-    jd_Glyph* g = font->glyphs + glyph_char;
     
     f32 dpi_scaling = renderer->dpi_scaling;
     
@@ -336,9 +300,9 @@ void jd_Internal_DrawGlyph(jd_Renderer* renderer, jd_Font* font, jd_V2F window_p
     f32 y = window_pos.y;
     f32 z = 0.0f;
     
-    jd_V3F tx = { g->size.x * (1.0f / (f32)_JD_RENDER_FONT_TEXTURE_WIDTH), g->size.y * (1.0f / (f32)_JD_RENDER_FONT_TEXTURE_HEIGHT), (f32)glyph_char };
+    jd_V3F tx = { g->size.x * (1.0f / (f32)jd_Render_Font_Texture_Width), g->size.y * (1.0f / (f32)jd_Render_Font_Texture_Height), g->texture_index };
     
-    jd_Rectangle rect;
+    jd_Rectangle rect = {0};
     rect.min.x = x + (g->offset.x);
     rect.min.y = y + (g->offset.y);
     rect.max.x = rect.min.x + (g->size.x);
@@ -376,21 +340,25 @@ void jd_Internal_DrawGlyph(jd_Renderer* renderer, jd_Font* font, jd_V2F window_p
     jd_DArrayPushBack(renderer->vertices, &top_right);
 }
 
-jd_V2F jd_CalcStringBoxMax(jd_Renderer* renderer, jd_Font* font, jd_String str, f32 wrap_width) {
-    jd_V2F max = {0.0f, font->line_adv};
+jd_V2F jd_CalcStringBoxMax(jd_Renderer* renderer, jd_Typeface* face, jd_String str, f32 wrap_width) {
+    jd_V2F max = {0.0f, face->line_adv};
     jd_V2F pos = {0.0f, 0.0f};
     
-    for (u64 i = 0; i < str.count; i++) {
-        c8 g = str.mem[i];
-        f32 adv = 0.0f;
-        if (g < 1024) {
-            adv = font->advances[g];
+    jd_UTFDecodedString utf32_string = jd_UnicodeDecodeUTF8String(renderer->frame_arena, jd_UnicodeTF_UTF32, str, false);
+    
+    for (u64 i = 0; i < utf32_string.count; i++) {
+        jd_Glyph* glyph = jd_TypefaceGetGlyph(face, utf32_string.utf32[i]);
+        
+        if (!glyph || glyph->codepoint == 0) {
+            glyph = jd_TypefaceGetGlyph(face, '?');
         }
+        
+        f32 adv = glyph->h_advance;
         
         if ((pos.x + adv > wrap_width)) {
             max.x = wrap_width;
             pos.x = 0;
-            pos.y += font->line_adv;
+            pos.y += face->line_adv;
             max.y = jd_Max(max.y, pos.y);
         }
         
@@ -406,40 +374,63 @@ jd_V2F jd_CalcStringBoxMax(jd_Renderer* renderer, jd_Font* font, jd_String str, 
     return max;
 }
 
-void jd_DrawString(jd_Renderer* renderer, jd_Font* font, jd_String str, jd_V2F window_pos, jd_V4F color, f32 wrap_width) {
+void jd_DrawString(jd_Renderer* renderer, jd_Typeface* face, jd_String str, jd_V2F window_pos, jd_V4F color, f32 wrap_width) {
     jd_V2F pos = window_pos;
     pos.x *= renderer->dpi_scaling;
     pos.y *= renderer->dpi_scaling;
-    pos.y += font->descent;
+    pos.y += face->descent;
+    
     jd_V2F starting_pos = pos;
-    for (u64 i = 0; i < str.count; i++) {
-        c8 g = str.mem[i];
-        f32 adv = 0.0f;
-        if (g < 1024) {
-            adv = font->advances[g];
+    
+    jd_UTFDecodedString utf32_string = jd_UnicodeDecodeUTF8String(renderer->frame_arena, jd_UnicodeTF_UTF32, str, false);
+    
+    jd_V4F supplied_color = color;
+    jd_V4F glyph_color = supplied_color;
+    
+    for (u64 i = 0; i < utf32_string.count; i++) {
+        glyph_color = supplied_color;
+        if (utf32_string.utf32[i] == 0x0a) {
+            pos.x = starting_pos.x;
+            pos.y += face->line_adv;
+            continue;
         }
+        
+        if (utf32_string.utf32[i] == 0x0d) {
+            continue;
+        }
+        
+        jd_Glyph* glyph = jd_TypefaceGetGlyph(face, utf32_string.utf32[i]);
+        if (!glyph || glyph->codepoint == 0) {
+            glyph = jd_TypefaceGetGlyph(face, '?');
+            glyph_color = (jd_V4F){1.0, 0.0, 0.0, 1.0};
+            renderer->active_texture = face->gl_texture[glyph->texture_page];
+        }
+        
+        f32 adv = glyph->h_advance;
         
         if ((pos.x - starting_pos.x) + adv > wrap_width) {
             pos.x = starting_pos.x;
-            pos.y += font->line_adv;
+            pos.y += face->line_adv;
         }
         
-        jd_Internal_DrawGlyph(renderer, font, pos, color, g);
+        jd_Internal_DrawGlyph(renderer, face, pos, glyph_color, glyph);
         
         pos.x += adv;
     }
 }
 
-void jd_DrawStringWithBG(jd_Renderer* renderer, jd_Font* font, jd_String str, jd_V2F window_pos, jd_V4F text_color, jd_V4F bg_color, f32 wrap_width) {
-    jd_V2F max = jd_CalcStringBoxMax(renderer, font, str, wrap_width);
+void jd_DrawStringWithBG(jd_Renderer* renderer, jd_Typeface* face, jd_String str, jd_V2F window_pos, jd_V4F text_color, jd_V4F bg_color, f32 wrap_width) {
+    jd_V2F max = jd_CalcStringBoxMax(renderer, face, str, wrap_width);
     jd_V2F box_pos = {window_pos.x, window_pos.y - max.y};
     jd_DrawRect(renderer, box_pos, max, bg_color);
-    jd_DrawString(renderer, font, str, window_pos, text_color, wrap_width);
+    jd_DrawString(renderer, face, str, window_pos, text_color, wrap_width);
 }
 
-#endif
-
 void jd_DrawRect(jd_Renderer* renderer, jd_V2F window_pos, jd_V2F size, jd_V4F col) {
+    if (renderer->active_texture != renderer->default_face->gl_texture[0]) {
+        jd_RendererDraw(renderer);
+        renderer->active_texture = renderer->default_face->gl_texture[0];
+    }
     f32 x = window_pos.x * renderer->dpi_scaling;
     f32 y = window_pos.y * renderer->dpi_scaling;
     f32 z = 0.0f;
@@ -488,20 +479,22 @@ jd_Renderer* jd_RendererCreate(struct jd_Window* window) {
     jd_Arena* arena = jd_ArenaCreate(0, 0);
     jd_Renderer* renderer = jd_ArenaAlloc(arena, sizeof(*renderer));
     renderer->arena = arena;
+    renderer->frame_arena = jd_ArenaCreate(0, 0);
     renderer->max_texture_layers = max_array_tex_layers;
     renderer->dpi_scaling = 1.0f;
-#if 0
-    renderer->fonts = jd_DArrayCreate(256, sizeof(jd_Font));
-    renderer->default_font = jd_FontPushFromFile(renderer, jd_StrLit("assets/libmono.ttf"), 42);
-#endif
+    renderer->font_lock = jd_UserLockCreate(renderer->arena, 32);
     
-#if 0
-    renderer->active_texture = renderer->default_font->texture;
-#endif
+    renderer->fonts = jd_DArrayCreate(256, sizeof(jd_Typeface));
+    
     renderer->vertices = jd_DArrayCreate(MEGABYTES(64) / sizeof(jd_GLVertex), sizeof(jd_GLVertex));
     renderer->window = window;
+    
     jd_RenderObjects* objects = &renderer->objects;
     jd_ShaderCreate(renderer);
+    
+    jd_File libmono = jd_DiskFileReadFromPath(renderer->frame_arena, jd_StrLit("C:\\Windows\\Fonts\\consola.ttf"));
+    renderer->default_face = jd_TypefaceLoadFromMemory(renderer, jd_StrLit("libmono"), libmono, &jd_unicode_range_bmp, 10);
+    renderer->active_texture = renderer->default_face->gl_texture[0];
     
     glGenVertexArrays(1, &objects->vao);
     glGenBuffers(1, &objects->vbo);
@@ -522,7 +515,7 @@ jd_Renderer* jd_RendererCreate(struct jd_Window* window) {
     glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(jd_GLVertex), (void*)(sizeof(jd_V3F) * 2));
     
     //glBindBuffer(GL_ARRAY_BUFFER, objects->vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(jd_GLVertex) * 3600, NULL, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, MEGABYTES(64), NULL, GL_DYNAMIC_DRAW);
     //glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
     //glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
     
@@ -548,9 +541,8 @@ void jd_RendererSetRenderSize(jd_Renderer* renderer, jd_V2F render_size) {
 void jd_RendererDraw(jd_Renderer* renderer) {
     jd_V2F size = jd_WindowGetDrawSize(renderer->window);
     
-    glBufferSubData(GL_ARRAY_BUFFER, 0, renderer->vertices->view.count * sizeof(jd_GLVertex), jd_DArrayGetIndex(renderer->vertices, 0));
-    
-    glActiveTexture(GL_TEXTURE0);
+    //glActiveTexture(GL_TEXTURE0);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, renderer->vertices->view.count * sizeof(jd_GLVertex), renderer->vertices->view.mem);
     glBindTexture(GL_TEXTURE_2D_ARRAY, renderer->active_texture);
     glUseProgram(renderer->objects.shader);
     i32 tex_loc = glGetUniformLocation(renderer->objects.shader, "tex");
@@ -563,4 +555,5 @@ void jd_RendererDraw(jd_Renderer* renderer) {
     glDrawArrays(GL_TRIANGLES, 0, renderer->vertices->view.count);
     
     jd_DArrayClear(renderer->vertices);
+    jd_ArenaPopTo(renderer->frame_arena, 0);
 }

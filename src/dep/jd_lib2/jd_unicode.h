@@ -3,11 +3,8 @@
 #ifndef JD_UNICODE_H
 #define JD_UNICODE_H
 
-#ifndef JD_DEFS_H
+#ifndef JD_UNITY_H
 #include "jd_defs.h"
-#endif
-
-#ifndef JD_STRING_H
 #include "jd_string.h"
 #endif
 

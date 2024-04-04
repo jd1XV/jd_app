@@ -3,11 +3,8 @@
 #ifndef JD_DEBUG_H
 #define JD_DEBUG_H
 
-#ifndef JD_STRING_H
+#ifndef JD_UNITY_H
 #include "jd_string.h"
-#endif
-
-#ifndef JD_MEMORY_H
 #include "jd_memory.h"
 #endif
 

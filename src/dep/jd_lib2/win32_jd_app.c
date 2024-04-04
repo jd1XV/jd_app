@@ -14,7 +14,7 @@ static const jd_String app_manifest = jd_StrConst("<?xml version=\"1.0\" encodin
                                                   "</asmv3:application>" \
                                                   "</assembly>");
 
-#define JD_APP_MAX_PACKAGE_NAME_LENGTH KILOBYTES(64)
+#define JD_APP_MAX_PACKAGE_NAME_LENGTH KILOBYTES(1)
 
 typedef struct jd_App {
     jd_Arena* arena;
@@ -40,12 +40,13 @@ void jd_AppFreeLib(jd_App* app) {
 
 void jd_AppLoadLib(jd_App* app) {
     jd_DString* package_name_str = jd_DStringCreate(JD_APP_MAX_PACKAGE_NAME_LENGTH);
-    if (app->package_name.count + sizeof("jd_app_pkg/.dll.active") > JD_APP_MAX_PACKAGE_NAME_LENGTH) {
+    if (app->package_name.count + sizeof("jd_app_pkg/_lib.dll.active") > JD_APP_MAX_PACKAGE_NAME_LENGTH) {
         jd_LogError("App name is too long!", jd_Error_OutOfMemory, jd_Error_Fatal);
     }
     
     jd_DStringAppend(package_name_str, jd_StrLit("jd_app_pkg/"));
     jd_DStringAppend(package_name_str, app->package_name);
+    jd_DStringAppend(package_name_str, jd_StrLit("_lib"));
     jd_DStringAppend(package_name_str, jd_StrLit(".dll"));
     
     if (app->lib_file_name.count == 0) 
@@ -74,13 +75,21 @@ void jd_AppLoadLib(jd_App* app) {
 void jd_AppUpdatePlatformWindows(jd_App* app) {
     jd_UserLockGet(app->lock);
     
+    static u64 reload_delay = 0;
+    
     u64 last_reload_time = app->reloadable_dll_file_time;
     u64 current_reload_time = jd_DiskGetFileLastMod(app->lib_file_name);
     
     if (last_reload_time < current_reload_time) {
-        jd_AppFreeLib(app);
-        jd_AppLoadLib(app);
-        app->reloadable_dll_file_time = current_reload_time;
+        if (reload_delay && reload_delay % 32 == 0) {
+            jd_AppFreeLib(app);
+            jd_AppLoadLib(app);
+            app->reloadable_dll_file_time = current_reload_time;
+            reload_delay = 0;
+        } else {
+            reload_delay++;
+        }
+        
     }
     
     for (u64 i = 0; i < app->window_count; i++) {

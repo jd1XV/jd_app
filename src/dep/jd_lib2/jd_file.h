@@ -3,19 +3,10 @@
 #ifndef JD_FILE_H
 #define JD_FILE_H
 
-#ifndef JD_DEFS_H
+#ifndef JD_UNITY_H
 #include "jd_defs.h"
-#endif 
-
-#ifndef JD_STRING_H
 #include "jd_string.h"
-#endif
-
-#ifndef JD_MEMORY_H
 #include "jd_memory.h"
-#endif
-
-#ifndef JD_ERROR_H
 #include "jd_error.h"
 #endif
 

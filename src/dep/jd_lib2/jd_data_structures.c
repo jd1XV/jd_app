@@ -98,7 +98,7 @@ jd_DArray* jd_DArrayCreate(u64 max, u64 stride) {
 }
 
 void* jd_DArrayGetIndex(jd_DArray* d_array, u64 index) {
-    return (void*)((u8*)d_array->view.mem + (d_array->stride * index));
+    return (void*)((u8*)(d_array->view.mem + (d_array->stride * index)));
 }
 
 void* jd_DArrayGetBack(jd_DArray* d_array) {
@@ -167,11 +167,3 @@ b32 jd_DArrayClearToIndex(jd_DArray* d_array, u64 index) {
 void jd_DArrayRelease(jd_DArray* d_array) { 
     jd_ArenaRelease(d_array->arena);
 }
-
-u32 jd_HashMapStore(jd_HashMap* map, u32 key, void* data) {
-    
-}
-
-jd_HashMap* jd_HashMapCreate(jd_Arena* arena, u64 cap, u64 stride) {
-    
-} 

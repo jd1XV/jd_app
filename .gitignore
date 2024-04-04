@@ -41,3 +41,7 @@ build/generated/continuation.txt
 /build/generated
 /build
 /dev/obj
+build/jd_app_test.pdb
+*.exe
+dev/jd_app.rdbg
+*.rdbg

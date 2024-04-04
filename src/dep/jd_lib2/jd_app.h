@@ -3,23 +3,11 @@
 #ifndef JD_APP_H
 #define JD_APP_H
 
-#ifndef JD_DEFS_H
+#ifndef JD_UNITY_H
 #include "jd_defs.h"
-#endif
-
-#ifndef JD_SYSINFO_H
 #include "jd_sysinfo.h"
-#endif
-
-#ifndef JD_STRING_H
 #include "jd_string.h"
-#endif
-
-#ifndef JD_MEMORY_H
 #include "jd_memory.h"
-#endif
-
-#ifndef JD_HELPERS_H
 #include "jd_helpers.h"
 #endif
 
@@ -104,7 +92,11 @@ typedef struct jd_Window {
 LRESULT CALLBACK jd_WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 static void _jd_Internal_WindowUpdateFunctionStub(jd_Window* window) {}
 
+#ifdef JD_CONSOLE
+#define jd_AppMainFn i32 main()
+#else
 #define jd_AppMainFn i32 APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hInstPrev, PSTR cmdline, i32 cmdshow)
+#endif
 
 #ifdef JD_APP_RELOADABLE
 #define jd_AppWindowFunction(x) __declspec(dllexport) void __cdecl x (struct jd_Window* window)

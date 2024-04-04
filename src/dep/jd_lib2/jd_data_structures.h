@@ -3,6 +3,10 @@
 #ifndef JD_DATA_STRUCTURES_H
 #define JD_DATA_STRUCTURES_H
 
+#ifndef JD_UNITY_H
+#include "jd_defs.h"
+#endif
+
 typedef struct jd_Node {
     struct jd_Arena* arena;
     struct jd_Node* next;
@@ -52,15 +56,6 @@ b32        jd_DArrayPopFront(jd_DArray* d_array);
 b32        jd_DArrayClear(jd_DArray* d_array);
 b32        jd_DArrayClearToIndex(jd_DArray* d_array, u64 index);
 void       jd_DArrayRelease(jd_DArray* d_array);
-
-typedef struct jd_HashMap {
-    u64 cap;
-    u64 stride;
-    void* data;
-} jd_HashMap;
-
-u32 jd_HashMapStore(jd_HashMap* map, u32 key, void* data);
-jd_HashMap* jd_HashMapCreate(jd_Arena* arena, u64 cap, u64 stride);
 
 #ifdef JD_IMPLEMENTATION
 #include "jd_data_structures.c"

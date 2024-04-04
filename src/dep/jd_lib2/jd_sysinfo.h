@@ -1,14 +1,10 @@
 /* date = March 12th 2024 11:59 pm */
-
 #ifndef JD_SYSINFO_H
 #define JD_SYSINFO_H
 
-#ifndef JD_DEFS_H
+#ifndef JD_UNITY_H
 #include "jd_defs.h"
-#endif
-
-#ifndef JD_DEBUG_H
-#include "jd_debug.h"
+#include "jd_error.h"
 #endif
 
 typedef enum jd_CPUFlags {
@@ -34,7 +30,9 @@ jd_CPUFlags jd_SysInfoGetCPUFlags();
 #define jd_CPUFlagIsSet(field, flag) ((field & flag) != 0)
 
 #ifdef JD_IMPLEMENTATION
+#ifdef JD_WINDOWS
 #include "win32_jd_sysinfo.c"
+#endif
 #endif
 
 #endif //JD_SYSINFO_H

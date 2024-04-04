@@ -54,6 +54,8 @@ jd_CPUFlags jd_SysInfoGetCPUFlags() {
     return _jd_internal_sysinfo.cpu_flags;
 }
 
+#ifdef JD_DEBUG
+
 void jd_DebugPrintSysInfo() {
     jd_CPUFlags flags = jd_SysInfoGetCPUFlags();
     jd_DebugPrint(jd_StrLit("CPU Vector Extensions Supported:\n"));
@@ -90,3 +92,5 @@ void jd_DebugPrintSysInfo() {
         jd_DebugPrint(jd_StrLit("-- AVX2\n"));
     }
 }
+
+#endif
