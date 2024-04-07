@@ -1,5 +1,8 @@
 static jd_SysInfo _jd_internal_sysinfo = {0};
 
+static i64 perf_freq = 0;
+static f64 perf_freq_ms = 0.0f;
+
 void jd_SysInfoFetch() {
     if (_jd_internal_sysinfo.fetched) {
         jd_LogError("System info already fetched!", jd_Error_APIMisuse, jd_Error_Common);
@@ -43,6 +46,16 @@ void jd_SysInfoFetch() {
     }
     
     _jd_internal_sysinfo.cpu_flags = flags;
+    
+    {
+        LARGE_INTEGER pf = {0};
+        QueryPerformanceFrequency(&pf);
+        perf_freq = pf.QuadPart;
+        perf_freq_ms = perf_freq / 1000.0f;
+        
+    }
+    
+    
     _jd_internal_sysinfo.fetched = true;
 }
 
@@ -54,11 +67,26 @@ jd_CPUFlags jd_SysInfoGetCPUFlags() {
     return _jd_internal_sysinfo.cpu_flags;
 }
 
+i64 jd_SysInfoGetPerformanceFrequency() {
+    if (!_jd_internal_sysinfo.fetched) {
+        jd_SysInfoFetch();
+    }
+    return perf_freq;
+}
+
+f64 jd_SysInfoGetPerformanceFrequencyMS() {
+    if (!_jd_internal_sysinfo.fetched) {
+        jd_SysInfoFetch();
+    }
+    
+    return perf_freq_ms;
+}
+
 #ifdef JD_DEBUG
 
 void jd_DebugPrintSysInfo() {
     jd_CPUFlags flags = jd_SysInfoGetCPUFlags();
-    jd_DebugPrint(jd_StrLit("CPU Vector Extensions Supported:\n"));
+    jd_DebugPrint(jd_StrLit("CPU Vector Extensns Supported:\n"));
     
     if (jd_CPUFlagIsSet(flags, jd_CPUFlags_SupportsSSE)) {
         jd_DebugPrint(jd_StrLit("-- SSE\n"));

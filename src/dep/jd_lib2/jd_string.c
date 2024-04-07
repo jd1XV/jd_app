@@ -30,6 +30,7 @@ jd_DString* jd_DStringCreate(u64 capacity) {
 
 void jd_DStringClear(jd_DString* d_string) {
     jd_ArenaPopTo(d_string->arena, 0 + sizeof(*d_string));
+    d_string->count = 0;
 }
 
 void jd_DStringAppend(jd_DString* d_string, jd_String app) {

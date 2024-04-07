@@ -128,6 +128,7 @@ void jd_AppUpdatePlatformWindows(jd_App* app) {
         jd_RendererSetDPIScale(window->renderer, window->dpi_scaling);
         window->func(window);
         jd_RendererDraw(window->renderer);
+        jd_ArenaPopTo(window->renderer->frame_arena, 0);
         SwapBuffers(window->device_context);
     }
     

@@ -158,9 +158,20 @@ b32 jd_DArrayClear(jd_DArray* d_array) {
     return true;
 }
 
+b32 jd_DArrayClearNoDecommit(jd_DArray* d_array) {
+    jd_DArrayClearToIndexNoDecommit(d_array, 0);
+    return true;
+}
+
 b32 jd_DArrayClearToIndex(jd_DArray* d_array, u64 index) { 
     jd_ArenaPopTo(d_array->arena, sizeof(jd_DArray) + (d_array->stride * index));
     d_array->view.count = index;
+    return true;
+}
+
+b32 jd_DArrayClearToIndexNoDecommit(jd_DArray* d_array, u64 index) {
+    d_array->view.count = index;
+    d_array->arena->pos = sizeof(jd_Arena) + sizeof(jd_DArray);
     return true;
 }
 

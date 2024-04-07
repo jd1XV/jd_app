@@ -30,6 +30,7 @@
 #include "jd_disk.h"
 #include "jd_app.h"
 #include "jd_renderer.h"
+#include "jd_timer.h"
 
 #ifdef JD_DEBUG
 #include "jd_debug.h"
@@ -52,6 +53,7 @@
 #include "win32_jd_sysinfo.c"
 #include "win32_jd_disk.c"
 #include "win32_jd_app.c"
+#include "win32_jd_timer.c"
 
 #ifdef JD_DEBUG
 #include "win32_jd_debug.c"

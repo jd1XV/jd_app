@@ -9,6 +9,7 @@
 #include "jd_string.h"
 #include "jd_memory.h"
 #include "jd_helpers.h"
+#include "jd_timer.h"
 #endif
 
 #define JD_APP_MAX_WINDOWS 2048

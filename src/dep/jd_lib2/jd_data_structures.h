@@ -55,6 +55,8 @@ b32        jd_DArrayPopBack(jd_DArray* d_array);
 b32        jd_DArrayPopFront(jd_DArray* d_array);
 b32        jd_DArrayClear(jd_DArray* d_array);
 b32        jd_DArrayClearToIndex(jd_DArray* d_array, u64 index);
+b32        jd_DArrayClearNoDecommit(jd_DArray* d_array);
+b32        jd_DArrayClearToIndexNoDecommit(jd_DArray* d_array, u64 index);
 void       jd_DArrayRelease(jd_DArray* d_array);
 
 #ifdef JD_IMPLEMENTATION

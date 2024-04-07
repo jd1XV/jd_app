@@ -78,9 +78,13 @@ void jd_ShaderCreate(jd_Renderer* renderer) {
     renderer->objects.shader = id;
 }
 
-#define jd_Render_Font_Texture_Height 256
-#define jd_Render_Font_Texture_Width 128
-#define jd_Render_Font_Texture_Depth 1024 // This should cover the vast majority of modern devices, but the standard *does* only gaurantee 256.
+u32 jd_RendererGetGLTextureIDByPage(jd_Renderer* renderer, u32 id) {
+    
+}
+
+#define jd_Render_Font_Texture_Height 128
+#define jd_Render_Font_Texture_Width 64
+#define jd_Render_Font_Texture_Depth 2048 // This should cover the vast majority of modern devices, but the standard *does* only gaurantee 256.
 
 #define jd_Default_Face_Point_Size 12
 
@@ -91,7 +95,7 @@ typedef struct _jd_FT_Instance {
 
 static _jd_FT_Instance _jd_ft_global_instance = {0};
 
-#define _jd_GlyphHashTableLimit KILOBYTES(64)
+#define _jd_GlyphHashTableLimit KILOBYTES(16)
 
 u32 jd_GlyphHashGetIndexForCodepoint(u32 codepoint) {
     if (codepoint <= 128) 
@@ -121,6 +125,7 @@ jd_Glyph* jd_TypefaceInsertGlyph(jd_Typeface* face, u32 codepoint) {
     }
     u32 hash = jd_GlyphHashGetIndexForCodepoint(codepoint);
     jd_Glyph* glyph = &face->glyphs[hash];
+    
     if (glyph->codepoint == 0) {
         glyph->codepoint = codepoint;
         return glyph;
@@ -197,12 +202,15 @@ jd_Typeface* jd_TypefaceLoadFromMemory(jd_Renderer* renderer, jd_String id_str, 
     face->arena = jd_ArenaCreate(0, 0);
     face->range = *range;
     
+    jd_Assert(renderer->texture_pass_count < jd_Renderer_Max_Texture_Passes);
+    renderer->texture_passes[renderer->texture_pass_count].vertices = jd_DArrayCreate(MEGABYTES(4) / sizeof(jd_GLVertex), sizeof(jd_GLVertex));
+    
     // allocate the first page of the texture
     // setup textures
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glGenTextures(1, &face->gl_texture[0]);
+    glGenTextures(1, &renderer->texture_passes[renderer->texture_pass_count].gl_index);
     //glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D_ARRAY, face->gl_texture[0]);
+    glBindTexture(GL_TEXTURE_2D_ARRAY, renderer->texture_passes[renderer->texture_pass_count].gl_index);
     glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA, jd_Render_Font_Texture_Width, jd_Render_Font_Texture_Height, jd_Render_Font_Texture_Depth, 0, GL_RED, GL_UNSIGNED_BYTE, 0);
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_REPEAT);
@@ -210,14 +218,13 @@ jd_Typeface* jd_TypefaceLoadFromMemory(jd_Renderer* renderer, jd_String id_str, 
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LEVEL, 3);
     
+    renderer->texture_pass_count++;
+    
     face->texture_width = jd_Render_Font_Texture_Width;
     face->texture_height = jd_Render_Font_Texture_Height;
     face->glyph_count = 0;
     
-    u32 texture_index = 0;
-    
     u32 glyph_texture_index = 0;
-    u32 glyph_texture_page = 0;
     
     // white space for drawing plain colored rects
     {
@@ -255,7 +262,7 @@ jd_Typeface* jd_TypefaceLoadFromMemory(jd_Renderer* renderer, jd_String id_str, 
                 
                 face->glyph_count++;
                 
-                glyph->texture_page = glyph_texture_page;
+                glyph->texture_page = renderer->texture_pass_count - 1;
                 glyph->texture_index = glyph_texture_index;
                 
                 glyph_texture_index++;
@@ -264,10 +271,17 @@ jd_Typeface* jd_TypefaceLoadFromMemory(jd_Renderer* renderer, jd_String id_str, 
                     glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
                     //glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
                     
-                    //glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-                    glGenTextures(1, &face->gl_texture[++glyph_texture_page]);
+                    jd_Assert(renderer->texture_pass_count < jd_Renderer_Max_Texture_Passes);
+                    renderer->texture_passes[renderer->texture_pass_count].vertices = jd_DArrayCreate(MEGABYTES(4) / sizeof(jd_GLVertex), sizeof(jd_GLVertex));
+                    
+                    // allocate the first page of the texture
+                    // setup textures
+                    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+                    glGenTextures(1, &renderer->texture_passes[renderer->texture_pass_count].gl_index);
                     //glActiveTexture(GL_TEXTURE0);
-                    glBindTexture(GL_TEXTURE_2D_ARRAY, face->gl_texture[glyph_texture_page]);
+                    glBindTexture(GL_TEXTURE_2D_ARRAY, renderer->texture_passes[renderer->texture_pass_count].gl_index);
+                    //glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+                    
                     glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA, jd_Render_Font_Texture_Width, jd_Render_Font_Texture_Height, jd_Render_Font_Texture_Depth, 0, GL_RED, GL_UNSIGNED_BYTE, 0);
                     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_REPEAT);
                     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_REPEAT);
@@ -275,6 +289,9 @@ jd_Typeface* jd_TypefaceLoadFromMemory(jd_Renderer* renderer, jd_String id_str, 
                     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
                     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LEVEL, 3);
                     glyph_texture_index = 0;
+                    
+                    
+                    renderer->texture_pass_count++;
                 }
             }
             
@@ -288,12 +305,7 @@ jd_Typeface* jd_TypefaceLoadFromMemory(jd_Renderer* renderer, jd_String id_str, 
     return face;
 }
 
-void jd_Internal_DrawGlyph(jd_Renderer* renderer, jd_Typeface* face, jd_V2F window_pos, jd_V4F col, jd_Glyph* g) {
-    if (renderer->active_texture != face->gl_texture[g->texture_page]) {
-        jd_RendererDraw(renderer);
-        renderer->active_texture = face->gl_texture[g->texture_page];
-    }
-    
+b32 jd_Internal_DrawGlyph(jd_Renderer* renderer, jd_Typeface* face, jd_V2F window_pos, jd_V4F col, jd_Glyph* g) {
     f32 dpi_scaling = renderer->dpi_scaling;
     
     f32 x = window_pos.x;
@@ -307,6 +319,18 @@ void jd_Internal_DrawGlyph(jd_Renderer* renderer, jd_Typeface* face, jd_V2F wind
     rect.min.y = y + (g->offset.y);
     rect.max.x = rect.min.x + (g->size.x);
     rect.max.y = rect.min.y + (g->size.y);
+    
+    if (rect.max.x < 0.0f || rect.max.y < 0.0f) {
+        return true;
+    }
+    
+    if (rect.min.x > renderer->render_size.x) {
+        return true;
+    }
+    
+    if (rect.min.y > renderer->render_size.y) {
+        return false;
+    }
     
     jd_GLVertex top_right = {
         .pos = { rect.max.x, rect.max.y, z },
@@ -332,12 +356,15 @@ void jd_Internal_DrawGlyph(jd_Renderer* renderer, jd_Typeface* face, jd_V2F wind
         .col = col
     };
     
-    jd_DArrayPushBack(renderer->vertices, &top_right);
-    jd_DArrayPushBack(renderer->vertices, &bottom_right);
-    jd_DArrayPushBack(renderer->vertices, &bottom_left);
-    jd_DArrayPushBack(renderer->vertices, &bottom_left);
-    jd_DArrayPushBack(renderer->vertices, &top_left);
-    jd_DArrayPushBack(renderer->vertices, &top_right);
+    jd_DArray* vertices = renderer->texture_passes[g->texture_page].vertices;
+    jd_DArrayPushBack(vertices, &top_right);
+    jd_DArrayPushBack(vertices, &bottom_right);
+    jd_DArrayPushBack(vertices, &bottom_left);
+    jd_DArrayPushBack(vertices, &bottom_left);
+    jd_DArrayPushBack(vertices, &top_left);
+    jd_DArrayPushBack(vertices, &top_right);
+    
+    return true;
 }
 
 jd_V2F jd_CalcStringBoxMax(jd_Renderer* renderer, jd_Typeface* face, jd_String str, f32 wrap_width) {
@@ -403,7 +430,6 @@ void jd_DrawString(jd_Renderer* renderer, jd_Typeface* face, jd_String str, jd_V
         if (!glyph || glyph->codepoint == 0) {
             glyph = jd_TypefaceGetGlyph(face, '?');
             glyph_color = (jd_V4F){1.0, 0.0, 0.0, 1.0};
-            renderer->active_texture = face->gl_texture[glyph->texture_page];
         }
         
         f32 adv = glyph->h_advance;
@@ -413,7 +439,9 @@ void jd_DrawString(jd_Renderer* renderer, jd_Typeface* face, jd_String str, jd_V
             pos.y += face->line_adv;
         }
         
-        jd_Internal_DrawGlyph(renderer, face, pos, glyph_color, glyph);
+        if (!(jd_Internal_DrawGlyph(renderer, face, pos, glyph_color, glyph))) {
+            break;
+        }
         
         pos.x += adv;
     }
@@ -427,10 +455,6 @@ void jd_DrawStringWithBG(jd_Renderer* renderer, jd_Typeface* face, jd_String str
 }
 
 void jd_DrawRect(jd_Renderer* renderer, jd_V2F window_pos, jd_V2F size, jd_V4F col) {
-    if (renderer->active_texture != renderer->default_face->gl_texture[0]) {
-        jd_RendererDraw(renderer);
-        renderer->active_texture = renderer->default_face->gl_texture[0];
-    }
     f32 x = window_pos.x * renderer->dpi_scaling;
     f32 y = window_pos.y * renderer->dpi_scaling;
     f32 z = 0.0f;
@@ -465,12 +489,14 @@ void jd_DrawRect(jd_Renderer* renderer, jd_V2F window_pos, jd_V2F size, jd_V4F c
         .col = col
     };
     
-    jd_DArrayPushBack(renderer->vertices, &top_right);
-    jd_DArrayPushBack(renderer->vertices, &bottom_right);
-    jd_DArrayPushBack(renderer->vertices, &bottom_left);
-    jd_DArrayPushBack(renderer->vertices, &bottom_left);
-    jd_DArrayPushBack(renderer->vertices, &top_left);
-    jd_DArrayPushBack(renderer->vertices, &top_right);
+    jd_DArray* vertices = renderer->texture_passes[0].vertices;
+    
+    jd_DArrayPushBack(vertices, &top_right);
+    jd_DArrayPushBack(vertices, &bottom_right);
+    jd_DArrayPushBack(vertices, &bottom_left);
+    jd_DArrayPushBack(vertices, &bottom_left);
+    jd_DArrayPushBack(vertices, &top_left);
+    jd_DArrayPushBack(vertices, &top_right);
 }
 
 jd_Renderer* jd_RendererCreate(struct jd_Window* window) {
@@ -485,8 +511,6 @@ jd_Renderer* jd_RendererCreate(struct jd_Window* window) {
     renderer->font_lock = jd_UserLockCreate(renderer->arena, 32);
     
     renderer->fonts = jd_DArrayCreate(256, sizeof(jd_Typeface));
-    
-    renderer->vertices = jd_DArrayCreate(MEGABYTES(64) / sizeof(jd_GLVertex), sizeof(jd_GLVertex));
     renderer->window = window;
     
     jd_RenderObjects* objects = &renderer->objects;
@@ -494,7 +518,6 @@ jd_Renderer* jd_RendererCreate(struct jd_Window* window) {
     
     jd_File libmono = jd_DiskFileReadFromPath(renderer->frame_arena, jd_StrLit("C:\\Windows\\Fonts\\consola.ttf"));
     renderer->default_face = jd_TypefaceLoadFromMemory(renderer, jd_StrLit("libmono"), libmono, &jd_unicode_range_bmp, 10);
-    renderer->active_texture = renderer->default_face->gl_texture[0];
     
     glGenVertexArrays(1, &objects->vao);
     glGenBuffers(1, &objects->vbo);
@@ -515,7 +538,7 @@ jd_Renderer* jd_RendererCreate(struct jd_Window* window) {
     glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(jd_GLVertex), (void*)(sizeof(jd_V3F) * 2));
     
     //glBindBuffer(GL_ARRAY_BUFFER, objects->vbo);
-    glBufferData(GL_ARRAY_BUFFER, MEGABYTES(64), NULL, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, MEGABYTES(16), NULL, GL_DYNAMIC_DRAW);
     //glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
     //glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
     
@@ -542,18 +565,23 @@ void jd_RendererDraw(jd_Renderer* renderer) {
     jd_V2F size = jd_WindowGetDrawSize(renderer->window);
     
     //glActiveTexture(GL_TEXTURE0);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, renderer->vertices->view.count * sizeof(jd_GLVertex), renderer->vertices->view.mem);
-    glBindTexture(GL_TEXTURE_2D_ARRAY, renderer->active_texture);
-    glUseProgram(renderer->objects.shader);
-    i32 tex_loc = glGetUniformLocation(renderer->objects.shader, "tex");
-    i32 screen_conv_location = glGetUniformLocation(renderer->objects.shader, "screen_conv");
-    glUniform1i(tex_loc, 0);
-    glUniform2f(screen_conv_location, 2.0f / size.w, 2.0f / size.h);
+    for (u64 i = 0; i < renderer->texture_pass_count; i++) {
+        jd_DArray* vertices = renderer->texture_passes[i].vertices;
+        
+        glBufferSubData(GL_ARRAY_BUFFER, 0, vertices->view.count * sizeof(jd_GLVertex), vertices->view.mem);
+        glBindTexture(GL_TEXTURE_2D_ARRAY, renderer->texture_passes[i].gl_index);
+        glUseProgram(renderer->objects.shader);
+        i32 tex_loc = glGetUniformLocation(renderer->objects.shader, "tex");
+        i32 screen_conv_location = glGetUniformLocation(renderer->objects.shader, "screen_conv");
+        glUniform1i(tex_loc, 0);
+        glUniform2f(screen_conv_location, 2.0f / size.w, 2.0f / size.h);
+        
+        glBindVertexArray(renderer->objects.vao);
+        glBindBuffer(GL_ARRAY_BUFFER, renderer->objects.vbo);
+        glDrawArrays(GL_TRIANGLES, 0, vertices->view.count);
+        
+        jd_DArrayClear(vertices);
+    }
     
-    glBindVertexArray(renderer->objects.vao);
-    glBindBuffer(GL_ARRAY_BUFFER, renderer->objects.vbo);
-    glDrawArrays(GL_TRIANGLES, 0, renderer->vertices->view.count);
-    
-    jd_DArrayClear(renderer->vertices);
-    jd_ArenaPopTo(renderer->frame_arena, 0);
+    //jd_ArenaPopTo(renderer->frame_arena, 0);
 }

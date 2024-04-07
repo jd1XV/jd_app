@@ -55,44 +55,16 @@ typedef struct jd_Typeface {
     jd_Glyph* glyphs; // array of glyphs
     u64 glyph_count;
     
-    u32 gl_texture[1024];
-    u32 gl_texture_count;
     u32 texture_width;
     u32 texture_height;
     u8* white_bitmap;
 } jd_Typeface;
-
-
-#if 0
-typedef struct jd_Font {
-    jd_File ttf_file;
-    f32 face_size;
-    f32 ascent;
-    
-    jd_Glyph glyphs[1024];
-    f32 advances[1024];
-    
-    u32 texture;
-    u32 texture_width;
-    u32 texture_height;
-    u8* white_bitmap;
-} jd_Font;
-#endif
 
 typedef struct jd_GLVertex {
     jd_V3F pos;
     jd_V3F tx;
     jd_V4F col;
 } jd_GLVertex;
-
-typedef struct jd_TextureSlice {
-    u32 index;
-    u32 max_nodes;
-} jd_TextureSlice;
-
-typedef struct jd_RGBATextureGroup {
-    jd_DArray* texture;
-} jd_RGBATextureGroup;
 
 typedef struct jd_RenderObjects {
     u32 vao;
@@ -102,23 +74,14 @@ typedef struct jd_RenderObjects {
     u32 tcb;
     u32 rbo;
     u32 fbo_tex;
-    u32 rgba_tex;
 } jd_RenderObjects;
 
-#define JD_RENDERBOX_GROW_DIR_L (1 << 0)
-#define JD_RENDERBOX_GROW_DIR_R (1 << 1)
-#define JD_RENDERBOX_GROW_DIR_U (1 << 2)
-#define JD_RENDERBOX_GROW_DIR_D (1 << 3)
-#define JD_RENDERBOX_GROW_NONE  (1 << 4)
+typedef struct jd_TexturePass {
+    u32 gl_index;
+    jd_DArray* vertices;
+} jd_TexturePass;
 
-typedef struct jd_RenderBox {
-    jd_Rectangle rect;
-    jd_V2F top_left;
-    jd_V2F min_size;
-    jd_V2F max_size;
-    jd_V2F text_cursor;
-    u32 flags;
-} jd_RenderBox;
+#define jd_Renderer_Max_Texture_Passes 256
 
 typedef struct jd_Renderer {
     jd_Arena* arena;
@@ -128,14 +91,15 @@ typedef struct jd_Renderer {
     //                         wants to load a font on a ui thread anyway?
     jd_DArray* fonts; // type: jd_Font
     
-    jd_DArray* vertices; // type: jd_GLVertex
     jd_RenderObjects objects;
     
     f32 dpi_scaling;
     jd_V2F render_size;
     
     u32 max_texture_layers;
-    u32 active_texture;
+    
+    jd_TexturePass texture_passes[jd_Renderer_Max_Texture_Passes];
+    u32 texture_pass_count;
     
     jd_Typeface* default_face;
     
