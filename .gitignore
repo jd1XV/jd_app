@@ -48,3 +48,7 @@ dev/jd_app.rdbg
 *.obj
 *.pdb
 *.exe
+*.ttf
+*.lib
+*.lib
+*.ttf
