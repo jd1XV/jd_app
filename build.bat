@@ -35,6 +35,7 @@ if not exist build mkdir build
 if not exist build/assets mkdir build/assets
 if not exist build/generated mkdir build/generated
 if not exist build/jd_app_pkg mkdir build/jd_app_pkg
+attrib +h build/jd_app_pkg
 if not exist dev mkdir dev
 if not exist dev/obj mkdir dev/obj
 if not exist dev/lib mkdir dev/lib

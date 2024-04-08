@@ -31,10 +31,7 @@ jd_AppWindowFunction(WindowFunc) {
     string.mem = fps_string->mem;
     string.count = fps_string->count;
     
-    jd_String numbers = jd_StrLit("1234567890");
-    
     jd_DrawRect(window->renderer, (jd_V2F){0.0f, 0.0f}, window->renderer->render_size, (jd_V4F){0.02f, 0.02f, 0.02f, 1.0f});
-    jd_DrawString(window->renderer, window->renderer->default_face, utf8, (jd_V2F){0.0f, 0.0f}, jd_TextPivot_TopLeft, (jd_V4F){1.0, 1.0, 0.7, 1.0f}, window->renderer->render_size.x);
-    //jd_DrawString(window->renderer, window->renderer->default_face, numbers, (jd_V2F){0.0f, 25.0f}, (jd_V4F){1.0f, 1.0f, 1.0f, 1.0f}, window->renderer->render_size.x);
-    jd_DrawStringWithBG(window->renderer, window->renderer->default_face, string, (jd_V2F){0.0f, 0.0f}, jd_TextPivot_TopLeft, (jd_V4F){1.0, 1.0, 1.0, 1.0}, (jd_V4F){.8, 0.0, 0.0, 1.0}, 1280.0f);
+    jd_DrawString(window->renderer, window->renderer->default_face, utf8, (jd_V2F){0.0f, 0.0f}, jd_TextOrigin_TopLeft, (jd_V4F){1.0, 1.0, 0.7, 1.0f}, window->renderer->render_size.x);
+    jd_DrawStringWithBG(window->renderer, window->renderer->default_face, string, (jd_V2F){0.0f, 0.0f}, jd_TextOrigin_TopLeft, (jd_V4F){1.0, 1.0, 1.0, 1.0}, (jd_V4F){.8, 0.0, 0.0, 1.0}, 1280.0f);
 }

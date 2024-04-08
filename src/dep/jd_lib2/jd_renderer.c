@@ -402,17 +402,17 @@ jd_V2F jd_CalcStringBoxMax(jd_Renderer* renderer, jd_Typeface* face, jd_String s
     return max;
 }
 
-void jd_DrawString(jd_Renderer* renderer, jd_Typeface* face, jd_String str, jd_V2F window_pos, jd_TextPivot baseline, jd_V4F color, f32 wrap_width) {
+void jd_DrawString(jd_Renderer* renderer, jd_Typeface* face, jd_String str, jd_V2F window_pos, jd_TextOrigin baseline, jd_V4F color, f32 wrap_width) {
     jd_V2F pos = window_pos;
     switch (baseline) {
         default: return;
         
-        case jd_TextPivot_TopLeft: {
+        case jd_TextOrigin_TopLeft: {
             pos.y += face->line_adv;
             break;
         }
         
-        case jd_TextPivot_BottomLeft: {
+        case jd_TextOrigin_BottomLeft: {
             break;
         }
     }
@@ -461,18 +461,18 @@ void jd_DrawString(jd_Renderer* renderer, jd_Typeface* face, jd_String str, jd_V
     }
 }
 
-void jd_DrawStringWithBG(jd_Renderer* renderer, jd_Typeface* face, jd_String str, jd_V2F window_pos, jd_TextPivot baseline, jd_V4F text_color, jd_V4F bg_color, f32 wrap_width) {
+void jd_DrawStringWithBG(jd_Renderer* renderer, jd_Typeface* face, jd_String str, jd_V2F window_pos, jd_TextOrigin baseline, jd_V4F text_color, jd_V4F bg_color, f32 wrap_width) {
     jd_V2F max = jd_CalcStringBoxMax(renderer, face, str, wrap_width);
     jd_V2F box_pos = {window_pos.x, window_pos.y - max.y};
     switch (baseline) {
         default: return;
         
-        case jd_TextPivot_TopLeft: {
+        case jd_TextOrigin_TopLeft: {
             box_pos.y += face->line_adv;
             break;
         }
         
-        case jd_TextPivot_BottomLeft: {
+        case jd_TextOrigin_BottomLeft: {
             break;
         }
     }
@@ -607,7 +607,7 @@ void jd_RendererDraw(jd_Renderer* renderer) {
         glBindBuffer(GL_ARRAY_BUFFER, renderer->objects.vbo);
         glDrawArrays(GL_TRIANGLES, 0, vertices->view.count);
         
-        jd_DArrayClear(vertices);
+        jd_DArrayClearNoDecommit(vertices);
     }
     
     //jd_ArenaPopTo(renderer->frame_arena, 0);

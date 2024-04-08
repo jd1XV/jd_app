@@ -12,8 +12,8 @@ typedef union jd_StopWatch {
     f64 stop;
 } jd_StopWatch; 
 
-jd_ExportFn jd_StopWatch jd_StopWatchStart();
-jd_ExportFn jd_StopWatch jd_StopWatchStop(jd_StopWatch watch);
+jd_ExportFn jd_ForceInline jd_StopWatch jd_StopWatchStart();
+jd_ExportFn jd_ForceInline jd_StopWatch jd_StopWatchStop(jd_StopWatch watch);
 
 #ifdef JD_IMPLEMENTATION
 #ifdef JD_WINDOWS
