@@ -37,7 +37,7 @@ typedef struct jd_TypefaceUnicodeRange {
     u32 end;
 } jd_TypefaceUnicodeRange;
 
-static jd_ReadOnly jd_TypefaceUnicodeRange jd_unicode_range_basic_latin = {0, 127};
+static jd_ReadOnly jd_TypefaceUnicodeRange jd_unicode_range_basic_latin = {0, 0x7F};
 static jd_ReadOnly jd_TypefaceUnicodeRange jd_unicode_range_bmp = {0, 0xFFFF};
 static jd_ReadOnly jd_TypefaceUnicodeRange jd_unicode_range_all = {0, 0x10FFFF};
 

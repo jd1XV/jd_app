@@ -234,7 +234,9 @@ jd_Typeface* jd_TypefaceLoadFromMemory(jd_Renderer* renderer, jd_String id_str, 
         glyph_texture_index++;
     }
     
-    face->glyphs = jd_ArenaAlloc(face->arena, sizeof(jd_Glyph) * jd_Max(128, _jd_GlyphHashTableLimit));
+    u64 alloc_size = (range->end == 0x7f) ? 0x7f : _jd_GlyphHashTableLimit;
+    
+    face->glyphs = jd_ArenaAlloc(face->arena, sizeof(jd_Glyph) * alloc_size);
     
     for (u32 i = 0; i < range->end; i++) {
         u32 glyph_index = FT_Get_Char_Index(ft_face, i);
@@ -544,7 +546,7 @@ jd_Renderer* jd_RendererCreate(struct jd_Window* window) {
     jd_ShaderCreate(renderer);
     
     jd_File libmono = jd_DiskFileReadFromPath(renderer->frame_arena, jd_StrLit("C:\\Windows\\Fonts\\consola.ttf"));
-    renderer->default_face = jd_TypefaceLoadFromMemory(renderer, jd_StrLit("libmono"), libmono, &jd_unicode_range_all, 10);
+    renderer->default_face = jd_TypefaceLoadFromMemory(renderer, jd_StrLit("libmono"), libmono, &jd_unicode_range_basic_latin, 10);
     
     glGenVertexArrays(1, &objects->vao);
     glGenBuffers(1, &objects->vbo);
@@ -565,7 +567,7 @@ jd_Renderer* jd_RendererCreate(struct jd_Window* window) {
     glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(jd_GLVertex), (void*)(sizeof(jd_V3F) * 2));
     
     //glBindBuffer(GL_ARRAY_BUFFER, objects->vbo);
-    glBufferData(GL_ARRAY_BUFFER, MEGABYTES(16), NULL, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, MEGABYTES(2), NULL, GL_DYNAMIC_DRAW);
     //glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
     //glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
     
