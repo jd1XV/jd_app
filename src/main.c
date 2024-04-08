@@ -12,7 +12,7 @@ jd_AppMainFn {
     
     jd_WindowConfig w_config = {
         .app = app,
-        .title = jd_StrLit("Hello World!"),
+        .title = jd_StrLit("jd_app Test"),
         .id_str = jd_StrLit("MainWindowID"),
         .function_name = jd_StrLit("WindowFunc"),
         .window_style = jd_WS_Dark

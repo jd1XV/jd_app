@@ -46,3 +46,5 @@ build/jd_app_test.pdb
 dev/jd_app.rdbg
 *.rdbg
 *.obj
+*.pdb
+*.exe
