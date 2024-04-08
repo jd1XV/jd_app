@@ -26,6 +26,13 @@ User32.lib gdi32.lib Opengl32.lib Ws2_32.lib Crypt32.lib Wldap32.lib Normaliz.li
 
 if %arg%==-d (set linkflags = /DEBUG:FULL !linkflags!)
 
+if not exist build mkdir build
+if not exist build/assets mkdir build/assets
+if not exist build/generated mkdir build/generated
+if not exist dev mkdir dev
+if not exist dev/obj mkdir dev/obj
+if not exist dev/lib mkdir dev/lib
+
 pushd src\
 cl /LD !compflags! !optiflags! app_functions.c /Fo..\dev\obj\ /link !linkflags! /INCREMENTAL:NO /OUT:../build/jd_app_pkg/!appname!.dll 
 popd
