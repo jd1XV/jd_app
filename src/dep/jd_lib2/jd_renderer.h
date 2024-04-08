@@ -39,6 +39,7 @@ typedef struct jd_TypefaceUnicodeRange {
 
 static jd_ReadOnly jd_TypefaceUnicodeRange jd_unicode_range_basic_latin = {0, 127};
 static jd_ReadOnly jd_TypefaceUnicodeRange jd_unicode_range_bmp = {0, 0xFFFF};
+static jd_ReadOnly jd_TypefaceUnicodeRange jd_unicode_range_all = {0, 0x10FFFF};
 
 typedef enum jd_TextOrigin {
     jd_TextOrigin_TopLeft,

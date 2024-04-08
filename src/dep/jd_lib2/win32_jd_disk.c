@@ -15,15 +15,6 @@ b32 jd_DiskPathDelete(jd_String path) {
 }
 
 u64 jd_DiskGetFileLastMod(jd_String path) {
-    typedef struct _WIN32_FILE_ATTRIBUTE_DATA {
-        DWORD    dwFileAttributes;
-        FILETIME ftCreationTime;
-        FILETIME ftLastAccessTime;
-        FILETIME ftLastWriteTime;
-        DWORD    nFileSizeHigh;
-        DWORD    nFileSizeLow;
-    } WIN32_FILE_ATTRIBUTE_DATA, *LPWIN32_FILE_ATTRIBUTE_DATA;
-    
     WIN32_FILE_ATTRIBUTE_DATA data = {0};
     
     b32 success = GetFileAttributesExA(path.mem, GetFileExInfoStandard, &data);

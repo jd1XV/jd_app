@@ -84,7 +84,7 @@ u32 jd_RendererGetGLTextureIDByPage(jd_Renderer* renderer, u32 id) {
 
 #define jd_Render_Font_Texture_Height 128
 #define jd_Render_Font_Texture_Width 64
-#define jd_Render_Font_Texture_Depth 2048 // This should cover the vast majority of modern devices, but the standard *does* only gaurantee 256.
+#define jd_Render_Font_Texture_Depth 1024 // This should cover the vast majority of modern devices, but the standard *does* only gaurantee 256.
 
 #define jd_Default_Face_Point_Size 12
 
@@ -97,7 +97,7 @@ static _jd_FT_Instance _jd_ft_global_instance = {0};
 
 #define _jd_GlyphHashTableLimit KILOBYTES(16)
 
-u32 jd_GlyphHashGetIndexForCodepoint(u32 codepoint) {
+jd_ForceInline u32 jd_GlyphHashGetIndexForCodepoint(u32 codepoint) {
     if (codepoint <= 128) 
         return codepoint;
     
@@ -203,7 +203,7 @@ jd_Typeface* jd_TypefaceLoadFromMemory(jd_Renderer* renderer, jd_String id_str, 
     face->range = *range;
     
     jd_Assert(renderer->texture_pass_count < jd_Renderer_Max_Texture_Passes);
-    renderer->texture_passes[renderer->texture_pass_count].vertices = jd_DArrayCreate(MEGABYTES(4) / sizeof(jd_GLVertex), sizeof(jd_GLVertex));
+    renderer->texture_passes[renderer->texture_pass_count].vertices = jd_DArrayCreate(MEGABYTES(2) / sizeof(jd_GLVertex), sizeof(jd_GLVertex));
     
     // allocate the first page of the texture
     // setup textures
@@ -234,7 +234,7 @@ jd_Typeface* jd_TypefaceLoadFromMemory(jd_Renderer* renderer, jd_String id_str, 
         glyph_texture_index++;
     }
     
-    face->glyphs = jd_ArenaAlloc(face->arena, sizeof(jd_Glyph) * _jd_GlyphHashTableLimit);
+    face->glyphs = jd_ArenaAlloc(face->arena, sizeof(jd_Glyph) * jd_Max(128, _jd_GlyphHashTableLimit));
     
     for (u32 i = 0; i < range->end; i++) {
         u32 glyph_index = FT_Get_Char_Index(ft_face, i);
@@ -272,7 +272,7 @@ jd_Typeface* jd_TypefaceLoadFromMemory(jd_Renderer* renderer, jd_String id_str, 
                     //glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
                     
                     jd_Assert(renderer->texture_pass_count < jd_Renderer_Max_Texture_Passes);
-                    renderer->texture_passes[renderer->texture_pass_count].vertices = jd_DArrayCreate(MEGABYTES(4) / sizeof(jd_GLVertex), sizeof(jd_GLVertex));
+                    renderer->texture_passes[renderer->texture_pass_count].vertices = jd_DArrayCreate(MEGABYTES(2) / sizeof(jd_GLVertex), sizeof(jd_GLVertex));
                     
                     // allocate the first page of the texture
                     // setup textures
@@ -544,7 +544,7 @@ jd_Renderer* jd_RendererCreate(struct jd_Window* window) {
     jd_ShaderCreate(renderer);
     
     jd_File libmono = jd_DiskFileReadFromPath(renderer->frame_arena, jd_StrLit("C:\\Windows\\Fonts\\consola.ttf"));
-    renderer->default_face = jd_TypefaceLoadFromMemory(renderer, jd_StrLit("libmono"), libmono, &jd_unicode_range_bmp, 10);
+    renderer->default_face = jd_TypefaceLoadFromMemory(renderer, jd_StrLit("libmono"), libmono, &jd_unicode_range_all, 10);
     
     glGenVertexArrays(1, &objects->vao);
     glGenBuffers(1, &objects->vbo);
