@@ -28,8 +28,8 @@ inline void _jd_Internal_ArenaDecommit(jd_Arena* arena, u64 pos, u64 size) {
 
 jd_Arena* jd_ArenaCreate(u64 capacity, u64 commit_page_size) {
     if (capacity == 0) capacity = GIGABYTES(4);
-    if (capacity < KILOBYTES(64)) capacity = KILOBYTES(64);
-    if (commit_page_size == 0) commit_page_size = KILOBYTES(64);
+    capacity = jd_Max(capacity, KILOBYTES(64));
+    commit_page_size = jd_Max(commit_page_size, KILOBYTES(4));
     
     jd_Arena* arena = (jd_Arena*)_jd_Internal_ArenaReserve(capacity, commit_page_size);
     

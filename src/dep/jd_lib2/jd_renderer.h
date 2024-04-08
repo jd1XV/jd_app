@@ -40,6 +40,12 @@ typedef struct jd_TypefaceUnicodeRange {
 static jd_ReadOnly jd_TypefaceUnicodeRange jd_unicode_range_basic_latin = {0, 127};
 static jd_ReadOnly jd_TypefaceUnicodeRange jd_unicode_range_bmp = {0, 0xFFFF};
 
+typedef enum jd_TextPivot {
+    jd_TextPivot_TopLeft,
+    jd_TextPivot_BottomLeft,
+    jd_TextPivot_Count
+} jd_TextPivot;
+
 typedef struct jd_Typeface {
     jd_Arena* arena;
     jd_String id_str;
@@ -110,8 +116,8 @@ typedef struct jd_Renderer {
 
 jd_Renderer* jd_RendererCreate();
 
-jd_ExportFn void jd_DrawString(jd_Renderer* renderer, jd_Typeface* face, jd_String str, jd_V2F window_pos, jd_V4F color, f32 wrap_width);
-jd_ExportFn void jd_DrawStringWithBG(jd_Renderer* renderer, jd_Typeface* face, jd_String str, jd_V2F window_pos, jd_V4F text_color, jd_V4F bg_color, f32 wrap_width);
+jd_ExportFn void jd_DrawString(jd_Renderer* renderer, jd_Typeface* face, jd_String str, jd_V2F window_pos, jd_TextPivot baseline, jd_V4F color, f32 wrap_width);
+jd_ExportFn void jd_DrawStringWithBG(jd_Renderer* renderer, jd_Typeface* face, jd_String str, jd_V2F window_pos, jd_TextPivot baseline, jd_V4F text_color, jd_V4F bg_color, f32 wrap_width);
 jd_ExportFn void jd_DrawRect(jd_Renderer* renderer, jd_V2F window_pos, jd_V2F size, jd_V4F col);
 jd_ExportFn void jd_RendererSetDPIScale(jd_Renderer* renderer, f32 scale);
 jd_ExportFn void jd_RendererSetRenderSize(jd_Renderer* renderer, jd_V2F render_size);

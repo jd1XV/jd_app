@@ -86,7 +86,7 @@ jd_DArray* jd_DArrayCreate(u64 max, u64 stride) {
     if (stride <= 0) 
         return 0; // err
     u64 a_cap = max * stride;
-    jd_Arena* arena = jd_ArenaCreate(jd_Max(max * stride, KILOBYTES(64)), jd_Max(stride * 4, KILOBYTES(64)));
+    jd_Arena* arena = jd_ArenaCreate(jd_Max(max * stride, KILOBYTES(64)), jd_Max(stride * 4, KILOBYTES(4)));
     if (!arena) // err 
         return 0;
     
@@ -97,15 +97,15 @@ jd_DArray* jd_DArrayCreate(u64 max, u64 stride) {
     return arr;
 }
 
-void* jd_DArrayGetIndex(jd_DArray* d_array, u64 index) {
+jd_ForceInline void* jd_DArrayGetIndex(jd_DArray* d_array, u64 index) {
     return (void*)((u8*)(d_array->view.mem + (d_array->stride * index)));
 }
 
-void* jd_DArrayGetBack(jd_DArray* d_array) {
+jd_ForceInline void* jd_DArrayGetBack(jd_DArray* d_array) {
     return jd_DArrayGetIndex(d_array, d_array->view.count - 1);
 }
 
-void* jd_DArrayPushBack(jd_DArray* d_array, void* data) { 
+jd_ForceInline void* jd_DArrayPushBack(jd_DArray* d_array, void* data) { 
     void* ptr = jd_ArenaAlloc(d_array->arena, d_array->stride);
     if (!ptr) return 0;
     
@@ -117,7 +117,7 @@ void* jd_DArrayPushBack(jd_DArray* d_array, void* data) {
     return ptr;
 }
 
-void* jd_DArrayPushAtIndex(jd_DArray* d_array, u64 index, void* data) { 
+jd_ForceInline void* jd_DArrayPushAtIndex(jd_DArray* d_array, u64 index, void* data) { 
     u64 space_in_front = (d_array->arena->pos - (d_array->stride * index));
     u8* space = jd_ArenaAlloc(d_array->arena, d_array->stride);
     u8* insert = jd_DArrayGetIndex(d_array, index);
@@ -128,7 +128,7 @@ void* jd_DArrayPushAtIndex(jd_DArray* d_array, u64 index, void* data) {
     return insert;
 }
 
-b32 jd_DArrayPopIndex(jd_DArray* d_array, u64 index) { 
+jd_ForceInline b32 jd_DArrayPopIndex(jd_DArray* d_array, u64 index) { 
     if (d_array->view.count == 0) return false;
     if (index > d_array->view.count - 1) return false;
     
@@ -142,34 +142,34 @@ b32 jd_DArrayPopIndex(jd_DArray* d_array, u64 index) {
     return true;
 }
 
-b32 jd_DArrayPopBack(jd_DArray* d_array) { 
+jd_ForceInline b32 jd_DArrayPopBack(jd_DArray* d_array) { 
     jd_DArrayPopIndex(d_array, d_array->view.count - 1);
     d_array->view.count--;
     return true;
 }
 
-b32 jd_DArrayPopFront(jd_DArray* d_array) { 
+jd_ForceInline b32 jd_DArrayPopFront(jd_DArray* d_array) { 
     jd_DArrayPopIndex(d_array, 0);
     return true;
 }
 
-b32 jd_DArrayClear(jd_DArray* d_array) { 
+jd_ForceInline b32 jd_DArrayClear(jd_DArray* d_array) { 
     jd_DArrayClearToIndex(d_array, 0);
     return true;
 }
 
-b32 jd_DArrayClearNoDecommit(jd_DArray* d_array) {
+jd_ForceInline b32 jd_DArrayClearNoDecommit(jd_DArray* d_array) {
     jd_DArrayClearToIndexNoDecommit(d_array, 0);
     return true;
 }
 
-b32 jd_DArrayClearToIndex(jd_DArray* d_array, u64 index) { 
+jd_ForceInline b32 jd_DArrayClearToIndex(jd_DArray* d_array, u64 index) { 
     jd_ArenaPopTo(d_array->arena, sizeof(jd_DArray) + (d_array->stride * index));
     d_array->view.count = index;
     return true;
 }
 
-b32 jd_DArrayClearToIndexNoDecommit(jd_DArray* d_array, u64 index) {
+jd_ForceInline b32 jd_DArrayClearToIndexNoDecommit(jd_DArray* d_array, u64 index) {
     d_array->view.count = index;
     d_array->arena->pos = sizeof(jd_Arena) + sizeof(jd_DArray);
     return true;

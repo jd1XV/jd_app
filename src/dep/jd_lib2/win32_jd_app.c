@@ -18,7 +18,6 @@ static const jd_String app_manifest = jd_StrConst("<?xml version=\"1.0\" encodin
 
 typedef struct jd_App {
     jd_Arena* arena;
-    jd_Arena* frame_arena;
     jd_UserLock* lock;
     jd_String package_name;
     
@@ -190,7 +189,7 @@ jd_Window* jd_AppPlatformCreateWindow(jd_WindowConfig* config) {
         
         case JD_AM_RELOADABLE: {
             if (config->function_name.count == 0) {
-                jd_LogError("App mode set to JD_AM_RELOADABLE*, but no function name supplied in jd_WindowConfig", jd_Error_APIMisuse, jd_Error_Fatal);
+                jd_LogError("App mode set to JD_AM_RELOADABLE, but no function name supplied in jd_WindowConfig", jd_Error_APIMisuse, jd_Error_Fatal);
                 return 0;
             }
             
@@ -386,7 +385,6 @@ jd_App* jd_AppCreate(jd_AppConfig* config) {
     jd_App* app = jd_ArenaAlloc(arena, sizeof(*app));
     app->lock = jd_UserLockCreate(arena, 16);
     app->arena = arena;
-    app->frame_arena = jd_ArenaCreate(GIGABYTES(1), 0);
     app->instance = GetModuleHandle(NULL); 
     app->mode = config->mode;
     app->package_name = jd_StringPush(arena, config->package_name);

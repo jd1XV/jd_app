@@ -145,4 +145,8 @@ typedef enum jd_Input {
     jd_Key_Count
 } jd_Input;
 
+typedef struct jd_InputEvent {
+    jd_Input input;
+} jd_InputEvent;
+
 #endif //JD_INPUT_H

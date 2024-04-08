@@ -228,7 +228,7 @@ jd_Typeface* jd_TypefaceLoadFromMemory(jd_Renderer* renderer, jd_String id_str, 
     
     // white space for drawing plain colored rects
     {
-        face->white_bitmap = jd_ArenaAlloc(renderer->arena, sizeof(u32) * face->texture_width * face->texture_height);
+        face->white_bitmap = jd_ArenaAlloc(renderer->frame_arena, sizeof(u32) * face->texture_width * face->texture_height);
         jd_MemSet(face->white_bitmap, 0xFF, sizeof(u32) * face->texture_width * face->texture_height);
         glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, 0, jd_Render_Font_Texture_Width, jd_Render_Font_Texture_Height, 1, GL_RED, GL_UNSIGNED_BYTE, face->white_bitmap);
         glyph_texture_index++;
@@ -389,6 +389,7 @@ jd_V2F jd_CalcStringBoxMax(jd_Renderer* renderer, jd_Typeface* face, jd_String s
             max.y = jd_Max(max.y, pos.y);
         }
         
+        
         else {
             pos.x += adv;
             max.x = jd_Max(max.x, pos.x);
@@ -401,8 +402,21 @@ jd_V2F jd_CalcStringBoxMax(jd_Renderer* renderer, jd_Typeface* face, jd_String s
     return max;
 }
 
-void jd_DrawString(jd_Renderer* renderer, jd_Typeface* face, jd_String str, jd_V2F window_pos, jd_V4F color, f32 wrap_width) {
+void jd_DrawString(jd_Renderer* renderer, jd_Typeface* face, jd_String str, jd_V2F window_pos, jd_TextPivot baseline, jd_V4F color, f32 wrap_width) {
     jd_V2F pos = window_pos;
+    switch (baseline) {
+        default: return;
+        
+        case jd_TextPivot_TopLeft: {
+            pos.y += face->line_adv;
+            break;
+        }
+        
+        case jd_TextPivot_BottomLeft: {
+            break;
+        }
+    }
+    
     pos.x *= renderer->dpi_scaling;
     pos.y *= renderer->dpi_scaling;
     pos.y += face->descent;
@@ -447,11 +461,24 @@ void jd_DrawString(jd_Renderer* renderer, jd_Typeface* face, jd_String str, jd_V
     }
 }
 
-void jd_DrawStringWithBG(jd_Renderer* renderer, jd_Typeface* face, jd_String str, jd_V2F window_pos, jd_V4F text_color, jd_V4F bg_color, f32 wrap_width) {
+void jd_DrawStringWithBG(jd_Renderer* renderer, jd_Typeface* face, jd_String str, jd_V2F window_pos, jd_TextPivot baseline, jd_V4F text_color, jd_V4F bg_color, f32 wrap_width) {
     jd_V2F max = jd_CalcStringBoxMax(renderer, face, str, wrap_width);
     jd_V2F box_pos = {window_pos.x, window_pos.y - max.y};
+    switch (baseline) {
+        default: return;
+        
+        case jd_TextPivot_TopLeft: {
+            box_pos.y += face->line_adv;
+            break;
+        }
+        
+        case jd_TextPivot_BottomLeft: {
+            break;
+        }
+    }
+    
     jd_DrawRect(renderer, box_pos, max, bg_color);
-    jd_DrawString(renderer, face, str, window_pos, text_color, wrap_width);
+    jd_DrawString(renderer, face, str, window_pos, baseline, text_color, wrap_width);
 }
 
 void jd_DrawRect(jd_Renderer* renderer, jd_V2F window_pos, jd_V2F size, jd_V4F col) {
@@ -510,7 +537,7 @@ jd_Renderer* jd_RendererCreate(struct jd_Window* window) {
     renderer->dpi_scaling = 1.0f;
     renderer->font_lock = jd_UserLockCreate(renderer->arena, 32);
     
-    renderer->fonts = jd_DArrayCreate(256, sizeof(jd_Typeface));
+    renderer->fonts = jd_DArrayCreate(32, sizeof(jd_Typeface));
     renderer->window = window;
     
     jd_RenderObjects* objects = &renderer->objects;
