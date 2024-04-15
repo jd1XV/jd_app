@@ -40,10 +40,10 @@ typedef struct jd_Error {
 
 typedef struct jd_ErrorLog {
     jd_UserLock* lock;
-    jd_Arena* arena;
-    jd_Error* errors;
-    jd_String serialized_file_path;
-    jd_DString* output_string;
+    jd_Arena*    arena;
+    jd_Error*    errors;
+    jd_String    serialized_file_path;
+    jd_DString*  output_string;
     u64 capacity;
     u64 count;
     u64 refresh_pos;

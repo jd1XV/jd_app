@@ -1,5 +1,5 @@
 #define JD_APP_RELOADABLE
-#include "dep/jd_lib2/platforms/jd_Windows.h"
+#include "dep/jd_lib2/platforms/jd_PlatformWindows.h"
 #include "dep/jd_lib2/jd_app.h"
 
 jd_AppWindowFunction(WindowFunc) {
@@ -31,7 +31,9 @@ jd_AppWindowFunction(WindowFunc) {
     string.mem = fps_string->mem;
     string.count = fps_string->count;
     
+    jd_String kern_test = jd_StrLit("Truly, This PJ");
+    
     jd_DrawRect(window->renderer, (jd_V2F){0.0f, 0.0f}, window->renderer->render_size, (jd_V4F){0.02f, 0.02f, 0.02f, 1.0f});
-    jd_DrawString(window->renderer, window->renderer->default_face, utf8, (jd_V2F){0.0f, 0.0f}, jd_TextOrigin_TopLeft, (jd_V4F){1.0, 1.0, 0.7, 1.0f}, window->renderer->render_size.x);
+    jd_DrawString(window->renderer, window->renderer->default_face, kern_test, (jd_V2F){0.0f, 50.f}, jd_TextOrigin_TopLeft, (jd_V4F){1.0, 1.0, 0.7, 1.0f}, window->renderer->render_size.x);
     jd_DrawStringWithBG(window->renderer, window->renderer->default_face, string, (jd_V2F){0.0f, 0.0f}, jd_TextOrigin_TopLeft, (jd_V4F){1.0, 1.0, 1.0, 1.0}, (jd_V4F){.8, 0.0, 0.0, 1.0}, 1280.0f);
 }

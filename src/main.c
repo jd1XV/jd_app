@@ -10,7 +10,7 @@ jd_AppMainFn {
     jd_ErrorLogInit(jd_StrLit("error_logs/log.txt"), 128);
     jd_App* app = jd_AppCreate(&(jd_AppConfig){JD_AM_RELOADABLE, jd_StrLit("jd_app_test")});
     
-    jd_WindowConfig w_config = {
+    jd_PlatformWindowConfig w_config = {
         .app = app,
         .title = jd_StrLit("jd_app Test"),
         .id_str = jd_StrLit("MainWindowID"),
@@ -18,7 +18,7 @@ jd_AppMainFn {
         .window_style = jd_WS_Dark
     };
     
-    jd_Window* main_window = jd_AppPlatformCreateWindow(&w_config);
+    jd_PlatformWindow* main_window = jd_AppPlatformCreateWindow(&w_config);
     while (jd_AppIsRunning(app)) {
         jd_AppPlatformUpdate(app);
     }

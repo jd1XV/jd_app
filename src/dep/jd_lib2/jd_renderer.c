@@ -37,17 +37,15 @@ jd_String fs_string = jd_StrConst("#version 430\n"
 void jd_ShaderCreate(jd_Renderer* renderer) {
     u32 id = 0;
     id = glCreateProgram();
-    c8 info_log[512];
     
     u32 vs = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vs, 1, &vs_string.mem, NULL);
     glCompileShader(vs);
     
-    i32 success;
+    i32 success = 0;
     glGetShaderiv(vs, GL_COMPILE_STATUS, &success);
     if (!success) {
-        glGetShaderInfoLog(vs, 512, NULL, info_log);
-        printf("ERROR::SHADER::VERTEX::COMPILATION_FAILED: %s\n", info_log);
+        jd_LogError("Vertex Shader failed to compile", jd_Error_BadInput, jd_Error_Critical);
         glDeleteShader(vs);
         glDeleteProgram(id);
         return;
@@ -60,8 +58,7 @@ void jd_ShaderCreate(jd_Renderer* renderer) {
     glGetShaderiv(fs, GL_COMPILE_STATUS, &success);
     
     if (!success) {
-        glGetShaderInfoLog(fs, 512, NULL, info_log);
-        printf("ERROR::SHADER::VERTEX::COMPILATION_FAILED: %s\n", info_log);
+        jd_LogError("Fragment Shader failed to compile", jd_Error_BadInput, jd_Error_Critical);
         glDeleteShader(vs);
         glDeleteShader(fs);
         glDeleteProgram(id);
@@ -78,12 +75,8 @@ void jd_ShaderCreate(jd_Renderer* renderer) {
     renderer->objects.shader = id;
 }
 
-u32 jd_RendererGetGLTextureIDByPage(jd_Renderer* renderer, u32 id) {
-    
-}
-
-#define jd_Render_Font_Texture_Height 128
-#define jd_Render_Font_Texture_Width 64
+#define jd_Render_Font_Texture_Height 256
+#define jd_Render_Font_Texture_Width 128
 #define jd_Render_Font_Texture_Depth 1024 // This should cover the vast majority of modern devices, but the standard *does* only gaurantee 256.
 
 #define jd_Default_Face_Point_Size 12
@@ -187,7 +180,7 @@ jd_Typeface* jd_TypefaceLoadFromMemory(jd_Renderer* renderer, jd_String id_str, 
         return 0;
     }
     
-    u32 dpi = jd_WindowGetDPI(renderer->window);
+    u32 dpi = jd_PlatformWindowGetDPI(renderer->window);
     error = FT_Set_Char_Size(ft_face,    /* handle to face object         */
                              0,       /* char_width in 1/64 of points  */
                              base_point_size * 64,   /* char_height in 1/64 of points */
@@ -197,7 +190,7 @@ jd_Typeface* jd_TypefaceLoadFromMemory(jd_Renderer* renderer, jd_String id_str, 
     jd_UserLockRelease(renderer->font_lock);
     
     face->ascent = ft_face->size->metrics.ascender / 64;
-    face->descent = ft_face->size->metrics.descender / 64 ;
+    face->descent = ft_face->size->metrics.descender / 64;
     face->line_adv = face->ascent - face->descent;
     face->arena = jd_ArenaCreate(0, 0);
     face->range = *range;
@@ -528,7 +521,7 @@ void jd_DrawRect(jd_Renderer* renderer, jd_V2F window_pos, jd_V2F size, jd_V4F c
     jd_DArrayPushBack(vertices, &top_right);
 }
 
-jd_Renderer* jd_RendererCreate(struct jd_Window* window) {
+jd_Renderer* jd_RendererCreate(struct jd_PlatformWindow* window) {
     u32 max_array_tex_layers = 256;
     glGetIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS, &max_array_tex_layers);
     jd_Arena* arena = jd_ArenaCreate(0, 0);
@@ -545,8 +538,8 @@ jd_Renderer* jd_RendererCreate(struct jd_Window* window) {
     jd_RenderObjects* objects = &renderer->objects;
     jd_ShaderCreate(renderer);
     
-    jd_File libmono = jd_DiskFileReadFromPath(renderer->frame_arena, jd_StrLit("C:\\Windows\\Fonts\\consola.ttf"));
-    renderer->default_face = jd_TypefaceLoadFromMemory(renderer, jd_StrLit("libmono"), libmono, &jd_unicode_range_basic_latin, 10);
+    jd_File libmono = jd_DiskFileReadFromPath(renderer->frame_arena, jd_StrLit("C:\\Windows\\Fonts\\arial.ttf"));
+    renderer->default_face = jd_TypefaceLoadFromMemory(renderer, jd_StrLit("libmono"), libmono, &jd_unicode_range_all, 18);
     
     glGenVertexArrays(1, &objects->vao);
     glGenBuffers(1, &objects->vbo);
@@ -591,7 +584,7 @@ void jd_RendererSetRenderSize(jd_Renderer* renderer, jd_V2F render_size) {
 }
 
 void jd_RendererDraw(jd_Renderer* renderer) {
-    jd_V2F size = jd_WindowGetDrawSize(renderer->window);
+    jd_V2F size = jd_PlatformWindowGetDrawSize(renderer->window);
     
     //glActiveTexture(GL_TEXTURE0);
     for (u64 i = 0; i < renderer->texture_pass_count; i++) {

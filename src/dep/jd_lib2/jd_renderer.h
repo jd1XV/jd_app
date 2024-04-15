@@ -110,9 +110,9 @@ typedef struct jd_Renderer {
     
     jd_Typeface* default_face;
     
-    struct jd_Window* window;
+    struct jd_PlatformWindow* window;
     
-    struct jd_Window* linked_window;
+    struct jd_PlatformWindow* linked_window;
 } jd_Renderer;
 
 jd_Renderer* jd_RendererCreate();

@@ -28,8 +28,10 @@
 #include "jd_data_structures.h"
 #include "jd_file.h"
 #include "jd_disk.h"
-#include "jd_app.h"
+#include "jd_input.h"
 #include "jd_renderer.h"
+#include "jd_app.h"
+#include "jd_ui.h"
 #include "jd_timer.h"
 
 #ifdef JD_DEBUG

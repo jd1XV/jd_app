@@ -16,6 +16,18 @@ static const jd_String app_manifest = jd_StrConst("<?xml version=\"1.0\" encodin
 
 #define JD_APP_MAX_PACKAGE_NAME_LENGTH KILOBYTES(1)
 
+typedef enum jd_Cursor {
+    jd_Cursor_Default,
+    jd_Cursor_Resize_H,
+    jd_Cursor_Resize_V,
+    jd_Cursor_Resize_Diagonal_TL_BR,
+    jd_Cursor_Resize_Diagonal_TR_BL,
+    jd_Cursor_Hand,
+    jd_Cursor_Text,
+    jd_Cursor_Loading,
+    jd_Cursor_Count
+} jd_Cursor;
+
 typedef struct jd_App {
     jd_Arena* arena;
     jd_UserLock* lock;
@@ -23,15 +35,73 @@ typedef struct jd_App {
     
     HINSTANCE instance;
     
-    struct jd_Window* windows[JD_APP_MAX_WINDOWS];
+    struct jd_PlatformWindow* windows[JD_APP_MAX_WINDOWS];
     u64 window_count;
     
     jd_AppMode mode;
     HMODULE reloadable_dll;
+    jd_Cursor cursor;
     jd_String lib_file_name;
     jd_String lib_copied_file_name;
     u64 reloadable_dll_file_time;
 } jd_App;
+
+void jd_AppSetCursor(jd_Cursor cursor) {
+    switch (cursor) {
+        default:
+        case jd_Cursor_Count: {
+            return;
+        }
+        
+        case jd_Cursor_Default: {
+            HCURSOR win_cursor = LoadCursorA(NULL, IDC_ARROW);
+            SetCursor(win_cursor);
+            break;
+        }
+        
+        case jd_Cursor_Resize_H: {
+            HCURSOR win_cursor = LoadCursorA(NULL, IDC_SIZEWE);
+            SetCursor(win_cursor);
+            break;
+        }
+        
+        case jd_Cursor_Resize_V: {
+            HCURSOR win_cursor = LoadCursorA(NULL, IDC_SIZENS);
+            SetCursor(win_cursor);
+            break;
+        }
+        
+        case jd_Cursor_Resize_Diagonal_TL_BR: {
+            HCURSOR win_cursor = LoadCursorA(NULL, IDC_SIZENWSE);
+            SetCursor(win_cursor);
+            break;
+        }
+        
+        case jd_Cursor_Resize_Diagonal_TR_BL: {
+            HCURSOR win_cursor = LoadCursorA(NULL, IDC_SIZENESW);
+            SetCursor(win_cursor);
+            break;
+        }
+        
+        case jd_Cursor_Hand: {
+            HCURSOR win_cursor = LoadCursorA(NULL, IDC_HAND);
+            SetCursor(win_cursor);
+            break;
+        }
+        
+        case jd_Cursor_Text: {
+            HCURSOR win_cursor = LoadCursorA(NULL, IDC_IBEAM);
+            SetCursor(win_cursor);
+            break;
+        }
+        
+        case jd_Cursor_Loading: {
+            HCURSOR win_cursor = LoadCursorA(NULL, IDC_WAIT);
+            SetCursor(win_cursor);
+            break;
+        }
+    }
+}
 
 void jd_AppFreeLib(jd_App* app) {
     FreeLibrary(app->reloadable_dll);
@@ -64,7 +134,7 @@ void jd_AppLoadLib(jd_App* app) {
     app->reloadable_dll = LoadLibraryExA(package_name_str->mem, NULL, 0);
     
     for (u64 i = 0; i < app->window_count; i++) {
-        jd_Window* window = app->windows[i];
+        jd_PlatformWindow* window = app->windows[i];
         window->func = (_jd_AppWindowFunction)GetProcAddress(app->reloadable_dll, window->function_name.mem);
     }
     
@@ -92,10 +162,9 @@ void jd_AppUpdatePlatformWindows(jd_App* app) {
     }
     
     for (u64 i = 0; i < app->window_count; i++) {
-        jd_Window* window = app->windows[i];
+        jd_PlatformWindow* window = app->windows[i];
         MSG msg = {0};
-        while (PeekMessage(&msg, window->handle, 0, 0, PM_REMOVE) > 0)
-        {
+        while (PeekMessage(&msg, window->handle, 0, 0, PM_REMOVE) > 0) {
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         } 
@@ -106,7 +175,7 @@ void jd_AppUpdatePlatformWindows(jd_App* app) {
     }
     
     for (u64 i = 0; i < app->window_count; i++) {
-        jd_Window* window = app->windows[i];
+        jd_PlatformWindow* window = app->windows[i];
         
         // get the size
         RECT client_rect = {0};
@@ -134,14 +203,14 @@ void jd_AppUpdatePlatformWindows(jd_App* app) {
     jd_UserLockRelease(app->lock);
 }
 
-void jd_AppPlatformCloseWindow(jd_Window* window) {
+void jd_AppPlatformCloseWindow(jd_PlatformWindow* window) {
     jd_App* app = window->app;
     u64 window_index = 0;
     for (window_index; window_index < app->window_count; window_index++) {
         if (app->windows[window_index] == window) {
-            jd_ZeroMemory(&app->windows[window_index], sizeof(jd_Window*));
+            jd_ZeroMemory(&app->windows[window_index], sizeof(jd_PlatformWindow*));
             if (window_index != app->window_count - 1) {
-                jd_MemMove(&app->windows[window_index], &app->windows[window_index] + 1, (app->window_count - (window_index + 1)) * sizeof(jd_Window*)); }
+                jd_MemMove(&app->windows[window_index], &app->windows[window_index] + 1, (app->window_count - (window_index + 1)) * sizeof(jd_PlatformWindow*)); }
             break;
         }
     }
@@ -151,9 +220,9 @@ void jd_AppPlatformCloseWindow(jd_Window* window) {
     jd_ArenaRelease(window->arena);
 }
 
-jd_Window* jd_AppPlatformCreateWindow(jd_WindowConfig* config) {
+jd_PlatformWindow* jd_AppPlatformCreateWindow(jd_PlatformWindowConfig* config) {
     if (!config) {
-        jd_LogError("Window initialized without jd_WindowConfig*", jd_Error_APIMisuse, jd_Error_Fatal);
+        jd_LogError("Window initialized without jd_PlatformWindowConfig*", jd_Error_APIMisuse, jd_Error_Fatal);
         return 0;
     }
     
@@ -169,18 +238,19 @@ jd_Window* jd_AppPlatformCreateWindow(jd_WindowConfig* config) {
     
     // Register the window class.
     jd_Arena* arena = jd_ArenaCreate(0, 0);
-    jd_Window* window = jd_ArenaAlloc(arena, sizeof(*window));
+    jd_PlatformWindow* window = jd_ArenaAlloc(arena, sizeof(*window));
     window->app = config->app;
     window->wndclass_str = jd_StringPush(arena, config->id_str);
     window->title = jd_StringPush(arena, config->title);
     window->arena = arena;
+    window->input_events = jd_DArrayCreate(MEGABYTES(256) / sizeof(jd_InputEvent), sizeof(jd_InputEvent));
     
     switch (config->app->mode) {
         default: break;
         
         case JD_AM_STATIC: {
             if (config->function_ptr) {
-                jd_LogError("App mode set to JD_AM_STATIC, but no Jd_AppWindowFunctionPtr supplied in jd_WindowConfig", jd_Error_APIMisuse, jd_Error_Fatal);
+                jd_LogError("App mode set to JD_AM_STATIC, but no Jd_AppWindowFunctionPtr supplied in jd_PlatformWindowConfig", jd_Error_APIMisuse, jd_Error_Fatal);
                 return 0;
             }
             
@@ -189,7 +259,7 @@ jd_Window* jd_AppPlatformCreateWindow(jd_WindowConfig* config) {
         
         case JD_AM_RELOADABLE: {
             if (config->function_name.count == 0) {
-                jd_LogError("App mode set to JD_AM_RELOADABLE, but no function name supplied in jd_WindowConfig", jd_Error_APIMisuse, jd_Error_Fatal);
+                jd_LogError("App mode set to JD_AM_RELOADABLE, but no function name supplied in jd_PlatformWindowConfig", jd_Error_APIMisuse, jd_Error_Fatal);
                 return 0;
             }
             
@@ -206,10 +276,10 @@ jd_Window* jd_AppPlatformCreateWindow(jd_WindowConfig* config) {
     
     WNDCLASSEX wc = {0};
     wc.cbSize = sizeof(WNDCLASSEX);
-    wc.lpfnWndProc   = jd_WindowProc;
+    wc.lpfnWndProc   = jd_PlatformWindowProc;
     wc.hInstance     = config->app->instance;
     wc.lpszClassName = window->wndclass_str.mem;
-    wc.cbWndExtra    = sizeof(jd_Window*);
+    wc.cbWndExtra    = sizeof(jd_PlatformWindow*);
     
     RegisterClassEx(&wc);
     
@@ -257,7 +327,7 @@ jd_Window* jd_AppPlatformCreateWindow(jd_WindowConfig* config) {
     dummy_wc.lpfnWndProc   = DefWindowProc;
     dummy_wc.hInstance     = config->app->instance;
     dummy_wc.lpszClassName = "dummy_wndclass";
-    dummy_wc.cbWndExtra    = sizeof(jd_Window*);
+    dummy_wc.cbWndExtra    = sizeof(jd_PlatformWindow*);
     RegisterClassEx(&dummy_wc);
     
     
@@ -368,16 +438,120 @@ b32 jd_AppIsRunning(jd_App* app) {
     return (app->window_count > 0);
 }
 
-LRESULT CALLBACK jd_WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-    switch (uMsg) {
+jd_ForceInline void _jd_GetMods(jd_InputEvent* e) {
+    if (GetKeyState(VK_LCONTROL)) {
+        e->mods |= jd_KeyMod_Ctrl;
+        e->mods |= jd_KeyMod_LCtrl;
+    }
+    
+    if (GetKeyState(VK_RCONTROL)) {
+        e->mods |= jd_KeyMod_Ctrl;
+        e->mods |= jd_KeyMod_RCtrl;
+    }
+    
+    if (GetKeyState(VK_LMENU)) {
+        e->mods |= jd_KeyMod_Alt;
+        e->mods |= jd_KeyMod_LAlt;
+    }
+    
+    if (GetKeyState(VK_RMENU)) {
+        e->mods |= jd_KeyMod_Alt;
+        e->mods |= jd_KeyMod_RAlt;
+    }
+    
+    if (GetKeyState(VK_LSHIFT)) {
+        e->mods |= jd_KeyMod_Shift;
+        e->mods |= jd_KeyMod_LShift;
+    }
+    
+    if (GetKeyState(VK_RSHIFT)) {
+        e->mods |= jd_KeyMod_Shift;
+        e->mods |= jd_KeyMod_RShift;
+    }
+    
+}
+
+LRESULT CALLBACK jd_PlatformWindowProc(HWND window_handle, UINT msg, WPARAM w_param, LPARAM l_param) {
+    static u32 count = 0;
+    jd_InputEvent e = {0};
+    jd_PlatformWindow* window = (jd_PlatformWindow*)GetWindowLongPtrA(window_handle, 0);
+    switch (msg) {
         case WM_DESTROY: {
-            jd_Window* window = (jd_Window*)GetWindowLongPtrA(hwnd, 0);
             window->closed = true;
             break;
         }
+        
+        case WM_LBUTTONUP:
+        case WM_MBUTTONUP:
+        case WM_RBUTTONUP: {
+            e.release_event = true;
+        }
+        case WM_LBUTTONDOWN:
+        case WM_MBUTTONDOWN:
+        case WM_RBUTTONDOWN: {
+            e.key = jd_MB_Left; 
+            switch (msg) {
+                case WM_MBUTTONDOWN:
+                case WM_MBUTTONUP: {
+                    e.key = jd_MB_Middle;
+                    break;
+                }
+                
+                case WM_RBUTTONDOWN:
+                case WM_LBUTTONDOWN: {
+                    e.key = jd_MB_Right;
+                    break;
+                }
+            }
+            
+            _jd_GetMods(&e);
+            
+            POINT p = {0};
+            GetCursorPos(&p);
+            ScreenToClient(window_handle, &p);
+            
+            e.mouse_pos.x = (f32)p.x;
+            e.mouse_pos.y = (f32)p.y;
+            jd_DArrayPushBack(window->input_events, &e);
+            break;
+        }
+        
+        case WM_KEYDOWN:
+        case WM_KEYUP: {
+            
+            if (w_param  < jd_Key_Tab) break;
+            if (w_param >= jd_Key_Shift && w_param <= jd_Key_Menu) break;
+            if (w_param >= jd_Key_LShift && w_param <= jd_Key_RMenu) break;
+            
+            e.release_event = (l_param & (1 << 31));
+            
+            if (w_param < jd_Key_Count) {
+                e.key = w_param;
+            }
+            
+            _jd_GetMods(&e);
+            jd_DArrayPushBack(window->input_events, &e);
+            
+            break;
+        }
+        
+        case WM_MOUSEMOVE: {
+            
+            break;
+        }
+        
+        case WM_MOUSEWHEEL: {
+            
+            break;
+        }
+        
+        case WM_CHAR: {
+            
+        }
+        
     }
     
-    return DefWindowProc(hwnd, uMsg, wParam, lParam);
+    return DefWindowProc(window_handle, msg, w_param, l_param);
 }
 
 jd_App* jd_AppCreate(jd_AppConfig* config) {
@@ -399,11 +573,11 @@ jd_App* jd_AppCreate(jd_AppConfig* config) {
     return app;
 }
 
-jd_V2F jd_WindowGetDrawSize(jd_Window* window) {
+jd_V2F jd_PlatformWindowGetDrawSize(jd_PlatformWindow* window) {
     return window->size;
 }
 
-u32 jd_WindowGetDPI(jd_Window* window) {
+u32 jd_PlatformWindowGetDPI(jd_PlatformWindow* window) {
     u32 dpi = GetDpiForWindow(window->handle);
     return dpi;
 }

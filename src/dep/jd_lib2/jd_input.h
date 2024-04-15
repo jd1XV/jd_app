@@ -3,9 +3,9 @@
 #ifndef JD_INPUT_H
 #define JD_INPUT_H
 
-#define _jd_InputMap(key, i) jd_Input_##key = i
+#define _jd_InputMap(key, i) key = i
 
-typedef enum jd_Input {
+typedef enum jd_Key {
     _jd_InputMap(jd_MB_Left,            0x01),
     _jd_InputMap(jd_MB_Right,           0x02),
     _jd_InputMap(jd_MB_Middle,          0x04),
@@ -143,10 +143,37 @@ typedef enum jd_Input {
     _jd_InputMap(jd_Key_RBrack_RBrace,      0xDD),  //  ']}' for US
     _jd_InputMap(jd_Key_Apos_Comma,         0xDE),  //  ''"' for US
     jd_Key_Count
-} jd_Input;
+} jd_Key;
+
+typedef enum jd_KeyMod {
+    jd_KeyMod_None   = 0,
+    jd_KeyMod_Ctrl   = (1 << 0),
+    jd_KeyMod_Alt    = (1 << 1),
+    jd_KeyMod_Shift  = (1 << 2),
+    jd_KeyMod_LCtrl  = (1 << 3),
+    jd_KeyMod_RCtrl  = (1 << 4),
+    jd_KeyMod_LAlt   = (1 << 5),
+    jd_KeyMod_RAlt   = (1 << 6),
+    jd_KeyMod_LShift = (1 << 7),
+    jd_KeyMod_RShift = (1 << 8)
+} jd_KeyMod;
 
 typedef struct jd_InputEvent {
-    jd_Input input;
+    jd_Key    key;
+    u32       mods;
+    jd_V2F    mouse_drag_start;
+    jd_V2F    mouse_pos;
+    jd_V2F    mouse_delta;
+    jd_V2F    scroll_delta;
+    jd_String drag_drop_data;
+    jd_String input_text;
+    b8        release_event; // 0 means it's a down method, and I feel fine assuming that's the usual case
 } jd_InputEvent;
+
+void jd_InputEventGetMods(jd_InputEvent* e);
+
+#ifdef JD_IMPLEMENTATION
+#include "jd_input.c"
+#endif
 
 #endif //JD_INPUT_H
