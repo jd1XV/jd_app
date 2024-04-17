@@ -12,6 +12,7 @@
 #include "jd_renderer.h"
 #include "jd_timer.h"
 #include "jd_input.h"
+#include "jd_ui.h"
 #endif
 
 #define JD_APP_MAX_WINDOWS 2048
@@ -69,6 +70,8 @@ typedef struct jd_PlatformWindow {
     jd_V2S32 pos_i;
     jd_V2S32 size_i;
     jd_DArray* input_events; // type: jd_InputEvent (jd_input.h)
+    struct jd_UIState* ui_states; 
+    
     _jd_AppWindowFunction func;
     jd_String function_name;
     

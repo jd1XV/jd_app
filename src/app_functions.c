@@ -1,5 +1,5 @@
 #define JD_APP_RELOADABLE
-#include "dep/jd_lib2/platforms/jd_PlatformWindows.h"
+#include "dep/jd_lib2/platforms/jd_Windows.h"
 #include "dep/jd_lib2/jd_app.h"
 
 jd_AppWindowFunction(WindowFunc) {
