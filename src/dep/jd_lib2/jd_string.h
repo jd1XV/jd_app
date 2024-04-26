@@ -19,6 +19,12 @@ typedef struct jd_DString {
 jd_ExportFn jd_String jd_StrLit(c8* c_str);
 #define   jd_StrConst(c_str) {c_str, sizeof(c_str) - 1}
 jd_ExportFn jd_String jd_StringPush(jd_Arena* arena, jd_String str);
+jd_ExportFn jd_String jd_StringPushF(jd_Arena* arena, jd_String fmt_string, ...);
+
+jd_ExportFn jd_String jd_StringPrefix(jd_String str, jd_String pattern);
+jd_ExportFn jd_String jd_StringPostfix(jd_String str, jd_String pattern);
+
+jd_ExportFn b32 jd_StringMatch(jd_String a, jd_String b);
 
 #define jd_DStringGet(x) (jd_String){x->mem, x->count}
 

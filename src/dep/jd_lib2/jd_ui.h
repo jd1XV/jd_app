@@ -8,8 +8,9 @@
 #endif
 
 typedef struct jd_UITag {
-    u32 hash;
     jd_String id_str;
+    u32 key;
+    u32 seed;
 } jd_UITag;
 
 typedef enum jd_UISizeRule {
@@ -27,50 +28,40 @@ typedef struct jd_UISize {
 } jd_UISize;
 
 typedef struct jd_UIStyle {
-    jd_V2F padding;
-    jd_V2F label_anchor;
-} jd_UIStyle;
-
-typedef struct jd_UIBoxStyle {
+    jd_String     id;
+    jd_V2F        offset;
     jd_V2F        label_anchor;
-    jd_V4F        color;
+    jd_V4F        color_bg;
     jd_V4F        color_border;
-    jd_V4F        label_color;
+    jd_V4F        color_label;
     jd_UISizeRule size_rule;
     jd_V2F        padding;
     f32           corner_radius;
     f32           border;
-} jd_UIBoxStyle;
-
-typedef struct jd_UIState {
-    jd_Arena* box_arena;
-    jd_View   box_array;
-    u64       box_array_size;
-    
-    struct jd_UIBoxRec* roots_front;
-    struct jd_UIBoxRec* roots_back;
-    
-    struct jd_UIBoxRec* hot;
-    struct jd_UIBoxRec* active;
-    u64          box_seed;
-    
-    jd_UIBoxStyle default_box_style;
-    
-    jd_String    str_id;
-    
-    jd_Node(jd_UIState);
-} jd_UIState;
+} jd_UIStyle;
 
 typedef struct jd_UIBoxRec {
-    jd_UIState* state;
     jd_UITag  tag;
     jd_UISize size;
     jd_V2F    label_anchor;
     jd_String label;
     
+    struct jd_UIBoxRec* next_with_same_hash;
+    
     u64 frame_last_touched;
+    
     jd_Node(jd_UIBoxRec);
 } jd_UIBoxRec;
+
+typedef struct jd_UIViewport {
+    jd_V2F size;
+    jd_UIBoxRec* root;
+    jd_UIBoxRec* popup_root;
+    jd_UIBoxRec* menu_root;
+    jd_UIBoxRec* hot;
+    jd_UIBoxRec* active;
+    jd_PlatformWindow* window;
+} jd_UIViewport;
 
 typedef struct jd_UIResult {
     jd_UIBoxRec* box;
@@ -84,9 +75,8 @@ typedef struct jd_UIResult {
 
 typedef struct jd_UIBoxConfig {
     jd_UIBoxRec*  parent;
-    jd_UIBoxStyle style;
-    jd_String     label;
-    jd_String     exp_id;
+    jd_UIStyle*   style;
+    jd_String     string;
     
     b8            disabled;
     b8            label_selectable;
@@ -97,8 +87,6 @@ typedef struct jd_UIBoxConfig {
 } jd_UIBoxConfig;
 
 jd_ExportFn jd_UIResult jd_UIBox(jd_UIBoxConfig* cfg);
-jd_ExportFn jd_UIState* jd_UIGetState(jd_String state_id, jd_PlatformWindow* window);
-
 
 #ifdef JD_IMPLEMENTATION
 #include "jd_ui.c"

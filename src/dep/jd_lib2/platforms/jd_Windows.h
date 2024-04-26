@@ -13,4 +13,6 @@
 
 #define JD_WINDOWS
 
+#define jd_ProcessExit(x) ExitProcess(x)
+
 #endif //JD__WINDOWS_H

@@ -28,3 +28,58 @@ b32 jd_UserLockTryGet(jd_UserLock* lock) {
 void jd_UserLockDelete(jd_UserLock* lock) {
     DeleteCriticalSection(&lock->lock);
 }
+
+typedef struct jd_RWLock {
+    SRWLOCK srw;
+} jd_RWLock;
+
+jd_ForceInline jd_RWLock* jd_RWLockCreate(jd_Arena* arena) {
+    jd_RWLock* lock = jd_ArenaAlloc(arena, sizeof(*lock));
+    InitializeSRWLock(&lock->srw);
+    return lock;
+}
+
+jd_ForceInline void jd_RWLockGet(jd_RWLock* lock, jd_RWLockMode mode) {
+    switch (mode) {
+        case jd_RWLock_Read: {
+            AcquireSRWLockShared(&lock->srw);
+            return;
+        } break;
+        
+        case jd_RWLock_Write: {
+            AcquireSRWLockExclusive(&lock->srw);
+            return;
+        } break;
+        
+        default: return;
+    }
+}
+
+jd_ForceInline b32 jd_RWLockTryGet(jd_RWLock* lock, jd_RWLockMode mode) {
+    switch (mode) {
+        case jd_RWLock_Read: {
+            return TryAcquireSRWLockShared(&lock->srw);
+        } break;
+        
+        case jd_RWLock_Write: {
+            return TryAcquireSRWLockExclusive(&lock->srw);
+        } break;
+        
+        default: return false;
+    }
+}
+
+jd_ForceInline void jd_RWLockRelease(jd_RWLock* lock, jd_RWLockMode mode) {
+    switch (mode) {
+        case jd_RWLock_Read: {
+            ReleaseSRWLockShared(&lock->srw);
+        } break;
+        
+        case jd_RWLock_Write: {
+            ReleaseSRWLockExclusive(&lock->srw);
+        } break;
+        
+        default: return;
+    }
+}
+

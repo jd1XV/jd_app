@@ -63,6 +63,14 @@ void* jd_ArenaAlloc(jd_Arena* arena, u64 size) {
     return result;
 }
 
+jd_View jd_ArenaAllocView(jd_Arena* arena, u64 size) {
+    jd_View view = {
+        .mem = jd_ArenaAlloc(arena, size),
+        .size = size
+    };
+    
+    return view;
+}
 
 void jd_ArenaPopTo(jd_Arena* arena, u64 pos) {
     arena->pos = sizeof(jd_Arena) + pos;
@@ -107,6 +115,52 @@ void jd_MemSet(u8* dest, const u8 val, u64 size) {
         dest[index] = val;
     }
 }
+
+b32 jd_MemCmp(void* a_, void* b_, u64 size) {
+    jd_CPUFlags flags = jd_SysInfoGetCPUFlags();
+    u64 index = 0;
+    
+    u8* a = a_;
+    u8* b = b_;
+    
+    if (jd_CPUFlagIsSet(flags, jd_CPUFlags_SupportsAVX)) {
+        for (; index + 32 <= size; index += 32) {
+            __m256i _a = _mm256_loadu_si256((__m256i*)(a + index));
+            __m256i _b = _mm256_loadu_si256((__m256i*)(b + index));
+            __m256i res = _mm256_cmpeq_epi8(_a, _b);
+            i32 mask = _mm256_movemask_epi8(res);
+            
+            if (mask != 0xFFFFFFFF) {
+                return false;
+            }
+        }
+        
+    }
+    
+    if (index == size) return true;
+    
+    if (jd_CPUFlagIsSet(flags, jd_CPUFlags_SupportsSSE2)) {
+        for (; index + 16 <= size; index += 16) {
+            __m128i _a = _mm_loadu_si128((__m128i*)(a + index));
+            __m128i _b = _mm_loadu_si128((__m128i*)(b + index));
+            __m128i res = _mm_cmpeq_epi8(_a, _b);
+            i32 mask = _mm_movemask_epi8(res);
+            
+            if (mask != 0xFFFFFFFF) {
+                return false;
+            }
+        }
+    }
+    
+    if (index == size) return true;
+    
+    for (; index < size; index++) {
+        if (*(a + index) != *(b + index)) return false;
+    }
+    
+    return true;
+}
+
 
 #define jd_BitScanMSB32(in, mask) _BitScanReverse(in, mask)
 #define jd_BitScanLSB32(in, mask) _BitScanForward(in, mask)

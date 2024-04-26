@@ -604,6 +604,4 @@ void jd_RendererDraw(jd_Renderer* renderer) {
         
         jd_DArrayClearNoDecommit(vertices);
     }
-    
-    //jd_ArenaPopTo(renderer->frame_arena, 0);
 }

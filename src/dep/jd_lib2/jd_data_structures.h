@@ -87,21 +87,23 @@ typedef struct jd_DArray {
     jd_Arena* arena;
     u64       stride;
     jd_View   view;
+    jd_RWLock* lock;
 } jd_DArray;
 
-jd_DArray* jd_DArrayCreate(u64 max, u64 stride);
-void*      jd_DArrayGetIndex(jd_DArray* arr, u64 index);
-void*      jd_DArrayGetBack(jd_DArray* arr);
-void*      jd_DArrayPushBack(jd_DArray* d_array, void* data);
-void*      jd_DArrayPushAtIndex(jd_DArray* d_array, u64 index, void* data);
-b32        jd_DArrayPopIndex(jd_DArray* d_array, u64 index);
-b32        jd_DArrayPopBack(jd_DArray* d_array);
-b32        jd_DArrayPopFront(jd_DArray* d_array);
-b32        jd_DArrayClear(jd_DArray* d_array);
-b32        jd_DArrayClearToIndex(jd_DArray* d_array, u64 index);
-b32        jd_DArrayClearNoDecommit(jd_DArray* d_array);
-b32        jd_DArrayClearToIndexNoDecommit(jd_DArray* d_array, u64 index);
-void       jd_DArrayRelease(jd_DArray* d_array);
+jd_ExportFn jd_DArray* jd_DArrayCreate(u64 max, u64 stride);
+jd_ExportFn jd_DArray* jd_DArrayCreateWithLock(u64 max, u64 stride);
+jd_ExportFn void*      jd_DArrayGetIndex(jd_DArray* arr, u64 index);
+jd_ExportFn void*      jd_DArrayGetBack(jd_DArray* arr);
+jd_ExportFn void*      jd_DArrayPushBack(jd_DArray* d_array, void* data);
+jd_ExportFn void*      jd_DArrayPushAtIndex(jd_DArray* d_array, u64 index, void* data);
+jd_ExportFn b32        jd_DArrayPopIndex(jd_DArray* d_array, u64 index);
+jd_ExportFn b32        jd_DArrayPopBack(jd_DArray* d_array);
+jd_ExportFn b32        jd_DArrayPopFront(jd_DArray* d_array);
+jd_ExportFn b32        jd_DArrayClear(jd_DArray* d_array);
+jd_ExportFn b32        jd_DArrayClearToIndex(jd_DArray* d_array, u64 index);
+jd_ExportFn b32        jd_DArrayClearNoDecommit(jd_DArray* d_array);
+jd_ExportFn b32        jd_DArrayClearToIndexNoDecommit(jd_DArray* d_array, u64 index);
+jd_ExportFn void       jd_DArrayRelease(jd_DArray* d_array);
 
 #ifdef JD_IMPLEMENTATION
 #include "jd_data_structures.c"

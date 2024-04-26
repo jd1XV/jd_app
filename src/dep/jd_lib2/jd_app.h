@@ -12,7 +12,6 @@
 #include "jd_renderer.h"
 #include "jd_timer.h"
 #include "jd_input.h"
-#include "jd_ui.h"
 #endif
 
 #define JD_APP_MAX_WINDOWS 2048
@@ -52,17 +51,19 @@ typedef struct jd_PlatformWindowConfig {
     jd_PlatformWindowStyle window_style;
 } jd_PlatformWindowConfig;
 
+typedef struct jd_PlatformWindow jd_PlatformWindow;
+
 void       jd_AppUpdatePlatformWindows(jd_App* app);
 jd_PlatformWindow* jd_AppPlatformCreateWindow(jd_PlatformWindowConfig* config);
 void       jd_AppPlatformCloseWindow(jd_PlatformWindow* window);
 b32        jd_AppPlatformUpdate(jd_App* app);
 
-#ifdef JD_WINDOWS
-
 typedef void (*_jd_AppWindowFunction)(struct jd_PlatformWindow* window);
 #define jd_AppWindowFunction(x) void x (struct jd_PlatformWindow* window)
 
-typedef struct jd_PlatformWindow {
+#ifdef JD_WINDOWS
+
+struct jd_PlatformWindow {
     jd_App* app;
     jd_Arena* arena;
     jd_V2F pos;
@@ -70,7 +71,6 @@ typedef struct jd_PlatformWindow {
     jd_V2S32 pos_i;
     jd_V2S32 size_i;
     jd_DArray* input_events; // type: jd_InputEvent (jd_input.h)
-    struct jd_UIState* ui_states; 
     
     _jd_AppWindowFunction func;
     jd_String function_name;
@@ -88,10 +88,7 @@ typedef struct jd_PlatformWindow {
     
     jd_String title;
     b8 closed;
-} jd_PlatformWindow;
-
-LRESULT CALLBACK jd_PlatformWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-static void _jd_Internal_WindowUpdateFunctionStub(jd_PlatformWindow* window) {}
+};
 
 #ifdef JD_CONSOLE
 #define jd_AppMainFn i32 main()
@@ -109,6 +106,6 @@ static void _jd_Internal_WindowUpdateFunctionStub(jd_PlatformWindow* window) {}
 #include "win32_jd_app.c"
 #endif
 
-#endif
+#endif // JD_WINDOWS
 
 #endif //JD_APP_H

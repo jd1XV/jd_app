@@ -17,10 +17,10 @@
 
 #include "jd_defs.h"
 #include "jd_math.h"
-#include "jd_glyphhash.h"
 #include "jd_helpers.h"
 #include "jd_memory.h"
 #include "jd_string.h"
+#include "jd_hash.h"
 #include "jd_locks.h"
 #include "jd_error.h"
 #include "jd_sysinfo.h"
@@ -47,7 +47,8 @@
 #include "jd_data_structures.c"
 #include "jd_renderer.c"
 #include "jd_math.c"
-#include "jd_glyphhash.c"
+#include "jd_ui.c"
+#include "jd_hash.c"
 
 #ifdef JD_WINDOWS
 #include "win32_jd_locks.c"

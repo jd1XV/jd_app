@@ -9,6 +9,7 @@
 #include "jd_memory.h"
 #include "jd_data_structures.h"
 #include "jd_disk.h"
+#include "jd_hash.h"
 #include "jd_app.h"
 #endif
 

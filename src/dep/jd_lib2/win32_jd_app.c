@@ -16,6 +16,8 @@ static const jd_String app_manifest = jd_StrConst("<?xml version=\"1.0\" encodin
 
 #define JD_APP_MAX_PACKAGE_NAME_LENGTH KILOBYTES(1)
 
+LRESULT CALLBACK jd_PlatformWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+
 typedef enum jd_Cursor {
     jd_Cursor_Default,
     jd_Cursor_Resize_H,

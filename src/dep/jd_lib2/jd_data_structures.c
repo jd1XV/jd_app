@@ -28,7 +28,6 @@ jd_ForceInline void* jd_DArrayPushBack(jd_DArray* d_array, void* data) {
     if (data != 0) {
         jd_MemCpy(ptr, data, d_array->stride);
     }
-    
     d_array->view.count++;
     return ptr;
 }

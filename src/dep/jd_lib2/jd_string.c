@@ -1,3 +1,7 @@
+#define STB_SPRINTF_DECORATE(name) stb_##name
+#define STB_SPRINTF_IMPLEMENTATION
+#include "../stb/stb_sprintf.h"
+
 jd_String jd_StrLit(c8* c_str) {
     jd_String str = {0};
     str.mem = c_str;
@@ -19,7 +23,49 @@ jd_String jd_StringPush(jd_Arena* arena, jd_String str) {
     return string;
 }
 
-jd_DString* jd_DStringCreate(u64 capacity) {
+jd_String jd_StringPushF(jd_Arena* arena, jd_String fmt_string, ...) {
+    va_list list = {0};
+    va_start(list, fmt_string);
+    i32 length = stb_vsnprintf(0, 0, fmt_string.mem, list);
+    jd_String string = {0};
+    string.count = length;
+    string.mem = jd_ArenaAlloc(arena, string.count);
+    stb_vsnprintf(string.mem, string.count, fmt_string.mem, list);
+    va_end(list);
+    return string;
+}
+
+jd_String jd_StringGetPrefix(jd_String str, jd_String pattern) {
+    jd_String s = str;
+    for (u64 i = 0; i + pattern.count < str.count; i++) {
+        if (jd_MemCmp(&str.mem[i], pattern.mem, pattern.count)) {
+            s.count = i;
+            return s;
+        }
+    }
+    
+    return s;
+}
+
+jd_ForceInline jd_String jd_StringGetPostfix(jd_String str, jd_String pattern) {
+    jd_String s = str;
+    for (u64 i = 0; i + pattern.count < str.count; i++) {
+        if (jd_MemCmp(&str.mem[i], pattern.mem, pattern.count)) {
+            s.mem = &str.mem[i];
+            s.count = str.count - i;
+            return s;
+        }
+    }
+    
+    return s;
+}
+
+b32 jd_StringMatch(jd_String a, jd_String b) {
+    if (a.count != b.count) return false;
+    return jd_MemCmp(a.mem, b.mem, a.count);
+}
+
+jd_ForceInline jd_DString* jd_DStringCreate(u64 capacity) {
     jd_Arena* arena = jd_ArenaCreate(capacity, 0);
     jd_DString* d_string = jd_ArenaAlloc(arena, sizeof(*d_string));
     d_string->arena = arena;
