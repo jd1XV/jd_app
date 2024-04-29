@@ -26,6 +26,11 @@ x->next = y; \
 x->next->next = _next; \
 } while (0) \
 
+#define jd_SLinkClear(x) \
+do { \
+x->next = 0; \
+} while (0) \
+
 #define jd_ForDLLForward(i, cond) jd_ForSLL(i, cond)
 #define jd_ForDLLBackward(i, cond) for (; cond; i = i->prev)
 #define jd_DLNext(x) jd_SLNext(x)
@@ -45,6 +50,12 @@ void* _prev = x->prev; \
 x->prev = y; \
 x->prev->prev = _prev; \
 x->prev->next = x; \
+} while (0) \
+
+#define jd_DLinksClear(x) \
+do { \
+jd_SLinkClear(x); \
+x->prev = 0; \
 } while (0) \
 
 #define jd_TreeLinkNext(x, y) \
@@ -70,7 +81,8 @@ do { \
 void* _lc = p->last_child; \
 c->parent = p; \
 c->prev = _lc; \
-_lc->next = c; \
+if (p->last_child) p->last_child->next = c; \
+if (!p->first_child) p->first_child = c; \
 p->last_child = c; \
 } while (0) \
 
@@ -79,8 +91,37 @@ do { \
 void* _fc = p->first_child; \
 c->parent = p; \
 c->next = _fc; \
-_fc->last = c; \
+if (p->first_child) p->first_child->next = c; \
+if (!p->last_child) p->last_child = c; \
 p->first_child = c; \
+} while (0) \
+
+#define jd_TreeLinksClear(x) \
+do { \
+jd_DLinksClear(x); \
+x->parent = 0; \
+x->last_child = 0; \
+x->first_child = 0; \
+} while (0) \
+
+#define jd_TreeTraversePreorder(x) \
+do { \
+if (x->first_child) { \
+x = x->first_child; \
+break; \
+} \
+if (x->next) { \
+x = x->next; \
+break; \
+} \
+else { \
+while (x != 0 && x->next == 0) { \
+x = x->parent; \
+} \
+\
+if (x != 0) \
+x = x->next; \
+} \
 } while (0) \
 
 typedef struct jd_DArray {

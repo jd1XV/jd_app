@@ -8,7 +8,7 @@
 #include "jd_memory.h"
 #endif
 
-void jd_DebugPrint(jd_String string);
+jd_ExportFn void jd_DebugPrint(jd_String string);
 
 #ifdef JD_IMPLEMENTATION
 

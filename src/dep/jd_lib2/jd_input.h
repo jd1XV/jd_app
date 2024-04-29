@@ -167,10 +167,19 @@ typedef struct jd_InputEvent {
     jd_V2F    scroll_delta;
     jd_String drag_drop_data;
     jd_String input_text;
-    b8        release_event; // 0 means it's a down method, and I feel fine assuming that's the usual case
+    b8        release_event; // 0 means it's a down event, and I feel fine assuming that's the usual case
 } jd_InputEvent;
 
-void jd_InputEventGetMods(jd_InputEvent* e);
+typedef struct jd_InputSlice {
+    jd_DArray* array;
+    u64 index;
+    u64 range;
+} jd_InputEventSlice;
+
+#define jd_InputSliceSize(x) (x.range - x.index)
+#define jd_InputSliceForEach(iden, x) for (u64 iden = x.index; iden < x.range; iden++)
+
+#define jd_InputHasMod(e, flag) (e->mods & flag)
 
 #ifdef JD_IMPLEMENTATION
 #include "jd_input.c"

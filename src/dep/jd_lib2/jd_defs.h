@@ -109,7 +109,7 @@ typedef struct jd_V2I32 {
         };
     };
     
-} jd_V2S32;
+} jd_V2I32;
 
 #pragma section("jd_readonlysec", read)
 #define jd_ReadOnly __declspec(allocate("jd_readonlysec"))

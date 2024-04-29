@@ -1,6 +1,7 @@
 #define JD_APP_RELOADABLE
 #include "dep/jd_lib2/platforms/jd_Windows.h"
 #include "dep/jd_lib2/jd_app.h"
+#include "dep/jd_lib2/jd_ui.h"
 
 jd_AppWindowFunction(WindowFunc) {
     static f64 frame_time = 0.0f;
@@ -34,6 +35,18 @@ jd_AppWindowFunction(WindowFunc) {
     jd_String kern_test = jd_StrLit("Truly, This PJ");
     
     jd_DrawRect(window->renderer, (jd_V2F){0.0f, 0.0f}, window->renderer->render_size, (jd_V4F){0.02f, 0.02f, 0.02f, 1.0f});
-    jd_DrawString(window->renderer, window->renderer->default_face, kern_test, (jd_V2F){0.0f, 50.f}, jd_TextOrigin_TopLeft, (jd_V4F){1.0, 1.0, 0.7, 1.0f}, window->renderer->render_size.x);
-    jd_DrawStringWithBG(window->renderer, window->renderer->default_face, string, (jd_V2F){0.0f, 0.0f}, jd_TextOrigin_TopLeft, (jd_V4F){1.0, 1.0, 1.0, 1.0}, (jd_V4F){.8, 0.0, 0.0, 1.0}, 1280.0f);
+    jd_UIBoxConfig config = {0};
+    config.string = jd_StrLit("This is a unique button id!");
+    config.rect.size.x = 250.0f;
+    config.rect.size.y = 250.0f;
+    config.rect.pos.x  = 0.0f;
+    config.rect.pos.y  = 0.0f;
+    
+    jd_UIBeginViewport(window);
+    jd_DrawStringWithBG(window->renderer, window->renderer->default_face, string, (jd_V2F){0.0f, window->renderer->render_size.y}, jd_TextOrigin_BottomLeft, (jd_V4F){1.0, 1.0, 1.0, 1.0}, (jd_V4F){.8, 0.0, 0.0, 1.0}, 1280.0f);
+    
+    jd_UIResult result = jd_UIBox(&config);
+    if (result.l_clicked) {
+        jd_DebugPrint(jd_StrLit("Left clicked!\n"));
+    }
 }

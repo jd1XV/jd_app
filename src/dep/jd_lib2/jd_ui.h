@@ -8,7 +8,6 @@
 #endif
 
 typedef struct jd_UITag {
-    jd_String id_str;
     u32 key;
     u32 seed;
 } jd_UITag;
@@ -22,10 +21,11 @@ typedef enum jd_UISizeRule {
     jd_UI_SizeRule_Count
 } jd_UISizeRule;
 
-typedef struct jd_UISize {
+typedef struct jd_UIRect {
     jd_UISizeRule rule;
-    jd_V2F v;
-} jd_UISize;
+    jd_V2F size;
+    jd_V2F pos;
+} jd_UIRect;
 
 typedef struct jd_UIStyle {
     jd_String     id;
@@ -42,7 +42,8 @@ typedef struct jd_UIStyle {
 
 typedef struct jd_UIBoxRec {
     jd_UITag  tag;
-    jd_UISize size;
+    jd_UIRect rect;
+    jd_V2F    pos; // platform window space
     jd_V2F    label_anchor;
     jd_String label;
     
@@ -58,25 +59,43 @@ typedef struct jd_UIViewport {
     jd_UIBoxRec* root;
     jd_UIBoxRec* popup_root;
     jd_UIBoxRec* menu_root;
+    
+    jd_UIBoxRec* root_new;
+    jd_UIBoxRec* popup_root_new;
+    jd_UIBoxRec* menu_root_new;
+    
     jd_UIBoxRec* hot;
     jd_UIBoxRec* active;
     jd_PlatformWindow* window;
+    
+    jd_InputEventSlice new_inputs;
+    jd_InputEventSlice old_inputs;
 } jd_UIViewport;
 
 typedef struct jd_UIResult {
     jd_UIBoxRec* box;
+    
     b8 l_clicked;
     b8 r_clicked;
     b8 m_clicked;
+    
+    b8 control_clicked;
+    b8 alt_clicked;
+    b8 shift_clicked;
+    
     b8 text_input;
+    
     b8 drag_drop_recieved;
     b8 drag_drop_sent;
+    
+    b8 hovered;
 } jd_UIResult;
 
 typedef struct jd_UIBoxConfig {
     jd_UIBoxRec*  parent;
     jd_UIStyle*   style;
     jd_String     string;
+    jd_UIRect     rect;
     
     b8            disabled;
     b8            label_selectable;

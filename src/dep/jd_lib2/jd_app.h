@@ -19,6 +19,7 @@
 typedef struct jd_PlatformWindow jd_PlatformWindow;
 jd_V2F jd_PlatformWindowGetDrawSize(jd_PlatformWindow* window);
 u32 jd_PlatformWindowGetDPI(jd_PlatformWindow* window);
+jd_ExportFn jd_V2F jd_AppGetMousePos(jd_PlatformWindow* window);
 
 typedef struct jd_App jd_App;
 jd_App* jd_AppCreate(struct jd_AppConfig* config);
@@ -68,8 +69,8 @@ struct jd_PlatformWindow {
     jd_Arena* arena;
     jd_V2F pos;
     jd_V2F size;
-    jd_V2S32 pos_i;
-    jd_V2S32 size_i;
+    jd_V2I32 pos_i;
+    jd_V2I32 size_i;                                                                      
     jd_DArray* input_events; // type: jd_InputEvent (jd_input.h)
     
     _jd_AppWindowFunction func;

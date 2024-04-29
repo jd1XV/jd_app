@@ -105,6 +105,15 @@ void jd_AppSetCursor(jd_Cursor cursor) {
     }
 }
 
+jd_V2F jd_AppGetMousePos(jd_PlatformWindow* window) {
+    POINT p = {0};
+    GetCursorPos(&p);
+    ScreenToClient(window->handle, &p);
+    
+    jd_V2F v = {(f32)p.x, (f32)p.y};
+    return v;
+}
+
 void jd_AppFreeLib(jd_App* app) {
     FreeLibrary(app->reloadable_dll);
 }
@@ -323,7 +332,6 @@ jd_PlatformWindow* jd_AppPlatformCreateWindow(jd_PlatformWindowConfig* config) {
     
     SetWindowLongPtrA(window->handle, 0, (LONG_PTR)window);
     
-    
     WNDCLASSEX dummy_wc = {0};
     dummy_wc.cbSize = sizeof(WNDCLASSEX);
     dummy_wc.lpfnWndProc   = DefWindowProc;
@@ -441,34 +449,59 @@ b32 jd_AppIsRunning(jd_App* app) {
 }
 
 jd_ForceInline void _jd_GetMods(jd_InputEvent* e) {
-    if (GetKeyState(VK_LCONTROL)) {
-        e->mods |= jd_KeyMod_Ctrl;
-        e->mods |= jd_KeyMod_LCtrl;
+    u16 toggled = (1 << 0);
+    
+    e->mods = 0;
+    
+    {
+        u16 res = GetKeyState(VK_LCONTROL);
+        if (jd_BitIsSet(res, 15)) {
+            e->mods |= jd_KeyMod_Ctrl;
+            e->mods |= jd_KeyMod_LCtrl;
+        }
+        
     }
     
-    if (GetKeyState(VK_RCONTROL)) {
-        e->mods |= jd_KeyMod_Ctrl;
-        e->mods |= jd_KeyMod_RCtrl;
+    {
+        u16 res = GetKeyState(VK_RCONTROL);
+        if (jd_BitIsSet(res, 15)) {
+            e->mods |= jd_KeyMod_Ctrl;
+            e->mods |= jd_KeyMod_RCtrl;
+        }
     }
     
-    if (GetKeyState(VK_LMENU)) {
-        e->mods |= jd_KeyMod_Alt;
-        e->mods |= jd_KeyMod_LAlt;
+    {
+        u16 res = GetKeyState(VK_LMENU);
+        if (jd_BitIsSet(res, 15)) {
+            e->mods |= jd_KeyMod_Alt;
+            e->mods |= jd_KeyMod_LAlt;
+        }
+        
     }
     
-    if (GetKeyState(VK_RMENU)) {
-        e->mods |= jd_KeyMod_Alt;
-        e->mods |= jd_KeyMod_RAlt;
+    {
+        u16 res = GetKeyState(VK_RMENU);
+        if (jd_BitIsSet(res, 15)) {
+            e->mods |= jd_KeyMod_Alt;
+            e->mods |= jd_KeyMod_RAlt;
+        }
+        
     }
     
-    if (GetKeyState(VK_LSHIFT)) {
-        e->mods |= jd_KeyMod_Shift;
-        e->mods |= jd_KeyMod_LShift;
+    {
+        u16 res = GetKeyState(VK_LSHIFT);
+        if (jd_BitIsSet(res, 15)) {
+            e->mods |= jd_KeyMod_Shift;
+            e->mods |= jd_KeyMod_LShift;
+        }
     }
     
-    if (GetKeyState(VK_RSHIFT)) {
-        e->mods |= jd_KeyMod_Shift;
-        e->mods |= jd_KeyMod_RShift;
+    {
+        u16 res = GetKeyState(VK_RSHIFT);
+        if (jd_BitIsSet(res, 15)) {
+            e->mods |= jd_KeyMod_Shift;
+            e->mods |= jd_KeyMod_RShift;
+        }
     }
     
 }
@@ -500,7 +533,7 @@ LRESULT CALLBACK jd_PlatformWindowProc(HWND window_handle, UINT msg, WPARAM w_pa
                 }
                 
                 case WM_RBUTTONDOWN:
-                case WM_LBUTTONDOWN: {
+                case WM_RBUTTONUP: {
                     e.key = jd_MB_Right;
                     break;
                 }
@@ -548,7 +581,7 @@ LRESULT CALLBACK jd_PlatformWindowProc(HWND window_handle, UINT msg, WPARAM w_pa
         }
         
         case WM_CHAR: {
-            
+            break;
         }
         
     }
