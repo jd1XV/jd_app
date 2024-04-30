@@ -81,8 +81,9 @@ do { \
 void* _lc = p->last_child; \
 c->parent = p; \
 c->prev = _lc; \
-if (p->last_child) p->last_child->next = c; \
-if (!p->first_child) p->first_child = c; \
+c->next = 0; \
+if (p->last_child)   { p->last_child->next = c; } \
+if (!p->first_child) { p->first_child = c; } \
 p->last_child = c; \
 } while (0) \
 
@@ -91,6 +92,7 @@ do { \
 void* _fc = p->first_child; \
 c->parent = p; \
 c->next = _fc; \
+c->prev = 0; \
 if (p->first_child) p->first_child->next = c; \
 if (!p->last_child) p->last_child = c; \
 p->first_child = c; \

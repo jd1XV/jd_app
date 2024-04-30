@@ -66,6 +66,7 @@ typedef struct jd_UIViewport {
     
     jd_UIBoxRec* hot;
     jd_UIBoxRec* active;
+    jd_UIBoxRec* last_active;
     jd_PlatformWindow* window;
     
     jd_InputEventSlice new_inputs;
