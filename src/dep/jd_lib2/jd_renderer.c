@@ -75,9 +75,9 @@ void jd_ShaderCreate(jd_Renderer* renderer) {
     renderer->objects.shader = id;
 }
 
-#define jd_Render_Font_Texture_Height 256
-#define jd_Render_Font_Texture_Width 128
-#define jd_Render_Font_Texture_Depth 1024 // This should cover the vast majority of modern devices, but the standard *does* only gaurantee 256.
+#define jd_Render_Font_Texture_Height 128
+#define jd_Render_Font_Texture_Width 64
+#define jd_Render_Font_Texture_Depth 256 // This should cover the vast majority of modern devices, but the standard *does* only gaurantee 256.
 
 #define jd_Default_Face_Point_Size 12
 
@@ -539,7 +539,7 @@ jd_Renderer* jd_RendererCreate(struct jd_PlatformWindow* window) {
     jd_ShaderCreate(renderer);
     
     jd_File libmono = jd_DiskFileReadFromPath(renderer->frame_arena, jd_StrLit("C:\\Windows\\Fonts\\arial.ttf"));
-    renderer->default_face = jd_TypefaceLoadFromMemory(renderer, jd_StrLit("libmono"), libmono, &jd_unicode_range_all, 18);
+    renderer->default_face = jd_TypefaceLoadFromMemory(renderer, jd_StrLit("arial"), libmono, &jd_unicode_range_bmp, 18);
     
     glGenVertexArrays(1, &objects->vao);
     glGenBuffers(1, &objects->vbo);

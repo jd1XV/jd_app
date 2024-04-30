@@ -39,6 +39,7 @@ jd_AppWindowFunction(WindowFunc) {
     config.rect.pos.x  = 0.0f;
     config.rect.pos.y  = 0.0f;
     
+#if 1
     jd_UIBeginViewport(window);
     jd_DrawStringWithBG(window->renderer, window->renderer->default_face, string, (jd_V2F){0.0f, window->renderer->render_size.y}, jd_TextOrigin_BottomLeft, (jd_V4F){1.0, 1.0, 1.0, 1.0}, (jd_V4F){.8, 0.0, 0.0, 1.0}, 1280.0f);
     
@@ -55,4 +56,6 @@ jd_AppWindowFunction(WindowFunc) {
     if (result.l_clicked) {
         jd_DebugPrint(jd_StrLit("Button 2 Left clicked!\n"));
     }
+#endif
+    
 }
