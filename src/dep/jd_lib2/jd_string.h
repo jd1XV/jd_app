@@ -33,6 +33,7 @@ jd_ExportFn void jd_DStringRelease(jd_DString* d_string);
 
 jd_ExportFn void jd_DStringClear(jd_DString* d_string);
 jd_ExportFn void jd_DStringAppend(jd_DString* d_string, jd_String app);
+jd_ExportFn void jd_DStringAppendF(jd_DString* d_string, jd_String app_fmt, ...);
 jd_ExportFn void jd_DStringAppendC8(jd_DString* d_string, c8 app);
 jd_ExportFn void jd_DStringAppendU8(jd_DString* d_string, u8 num, u32 radix);
 jd_ExportFn void jd_DStringAppendU32(jd_DString* d_string, u32 num, u32 radix);

@@ -204,7 +204,7 @@ jd_Typeface* jd_TypefaceLoadFromMemory(jd_Renderer* renderer, jd_String id_str, 
     glGenTextures(1, &renderer->texture_passes[renderer->texture_pass_count].gl_index);
     //glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D_ARRAY, renderer->texture_passes[renderer->texture_pass_count].gl_index);
-    glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA, jd_Render_Font_Texture_Width, jd_Render_Font_Texture_Height, jd_Render_Font_Texture_Depth, 0, GL_RED, GL_UNSIGNED_BYTE, 0);
+    glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RED, jd_Render_Font_Texture_Width, jd_Render_Font_Texture_Height, jd_Render_Font_Texture_Depth, 0, GL_RED, GL_UNSIGNED_BYTE, 0);
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
@@ -277,7 +277,7 @@ jd_Typeface* jd_TypefaceLoadFromMemory(jd_Renderer* renderer, jd_String id_str, 
                     glBindTexture(GL_TEXTURE_2D_ARRAY, renderer->texture_passes[renderer->texture_pass_count].gl_index);
                     //glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
                     
-                    glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA, jd_Render_Font_Texture_Width, jd_Render_Font_Texture_Height, jd_Render_Font_Texture_Depth, 0, GL_RED, GL_UNSIGNED_BYTE, 0);
+                    glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RED, jd_Render_Font_Texture_Width, jd_Render_Font_Texture_Height, jd_Render_Font_Texture_Depth, 0, GL_RED, GL_UNSIGNED_BYTE, 0);
                     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_REPEAT);
                     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_REPEAT);
                     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);

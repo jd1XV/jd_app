@@ -35,6 +35,15 @@ jd_String jd_StringPushF(jd_Arena* arena, jd_String fmt_string, ...) {
     return string;
 }
 
+jd_String jd_StringPushVAList(jd_Arena* arena, jd_String fmt_string, va_list list) {
+    i32 length = stb_vsnprintf(0, 0, fmt_string.mem, list);
+    jd_String string = {0};
+    string.count = length;
+    string.mem = jd_ArenaAlloc(arena, string.count);
+    stb_vsnprintf(string.mem, string.count, fmt_string.mem, list);
+    return string;
+}
+
 jd_String jd_StringGetPrefix(jd_String str, jd_String pattern) {
     jd_String s = str;
     for (u64 i = 0; i + pattern.count < str.count; i++) {
@@ -83,6 +92,14 @@ void jd_DStringAppend(jd_DString* d_string, jd_String app) {
     u8* ptr = jd_ArenaAlloc(d_string->arena, app.count);
     d_string->count += app.count;
     jd_MemCpy(ptr, app.mem, app.count);
+}
+
+void jd_DStringAppendF(jd_DString* d_string, jd_String app_fmt, ...) {
+    va_list list = {0};
+    va_start(list, app_fmt);
+    jd_String str = jd_StringPushVAList(d_string->arena, app_fmt, list);
+    d_string->count += str.count;
+    va_end(list);
 }
 
 void jd_DStringAppendC8(jd_DString* d_string, c8 app) {

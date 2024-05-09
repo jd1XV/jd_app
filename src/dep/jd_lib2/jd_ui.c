@@ -120,7 +120,6 @@ void jd_UIPickActiveBox(jd_UIViewport* vp) {
                 } else {
                     vp->active = jd_UIPickBoxForPos(vp, e->mouse_pos);
                 }
-                
             }
         }
     }
