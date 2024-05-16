@@ -15,10 +15,10 @@ jd_app is in the very early stages, but is being designed from the ground up wit
 *Note that this is a work in progress, and many of these features are immature and liable to change.*
 
 ##### Inspired by:
-Sean Barrett (https://github.com/nothings)
-Ryan Fleury (https://www.rfleury.com/)
-Allen Webster (https://mr4th.com/)
-Casey Muratori (https://mollyrocket.com/)
-Omar Cornut (https://github.com/ocornut/imgui)
+- Sean Barrett (https://github.com/nothings)
+- Ryan Fleury (https://www.rfleury.com/)
+- Allen Webster (https://mr4th.com/)
+- Casey Muratori (https://mollyrocket.com/)
+- Omar Cornut (https://github.com/ocornut/imgui)
 
 *All rights reserved by the author. Repository is public for portfolio purposes. No warranty or license is implied by the public release of this code.*
