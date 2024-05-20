@@ -581,6 +581,10 @@ void jd_RendererSetRenderSize(jd_Renderer* renderer, jd_V2F render_size) {
     glViewport(0, 0, (i32)render_size.w, (i32)render_size.h);
     glClearColor(0.33f, 0.33f, 0.33f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
+    for (u64 i = 0; i < renderer->texture_pass_count; i++) {
+        jd_DArray* vertices = renderer->texture_passes[i].vertices;
+        jd_DArrayClearNoDecommit(vertices);
+    }
 }
 
 void jd_RendererDraw(jd_Renderer* renderer) {
@@ -601,7 +605,5 @@ void jd_RendererDraw(jd_Renderer* renderer) {
         glBindVertexArray(renderer->objects.vao);
         glBindBuffer(GL_ARRAY_BUFFER, renderer->objects.vbo);
         glDrawArrays(GL_TRIANGLES, 0, vertices->view.count);
-        
-        jd_DArrayClearNoDecommit(vertices);
     }
 }

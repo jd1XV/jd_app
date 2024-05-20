@@ -15,7 +15,7 @@ jd_AppMainFn {
         .title = jd_StrLit("jd_app Test"),
         .id_str = jd_StrLit("MainWindowID"),
         .function_name = jd_StrLit("WindowFunc"),
-        .window_style = jd_WS_Dark
+        .titlebar_style = jd_TitleBarStyle_Right
     };
     
     jd_PlatformWindow* main_window = jd_AppPlatformCreateWindow(&w_config);

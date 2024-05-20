@@ -18,18 +18,6 @@ static const jd_String app_manifest = jd_StrConst("<?xml version=\"1.0\" encodin
 
 LRESULT CALLBACK jd_PlatformWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
-typedef enum jd_Cursor {
-    jd_Cursor_Default,
-    jd_Cursor_Resize_H,
-    jd_Cursor_Resize_V,
-    jd_Cursor_Resize_Diagonal_TL_BR,
-    jd_Cursor_Resize_Diagonal_TR_BL,
-    jd_Cursor_Hand,
-    jd_Cursor_Text,
-    jd_Cursor_Loading,
-    jd_Cursor_Count
-} jd_Cursor;
-
 typedef struct jd_App {
     jd_Arena* arena;
     jd_UserLock* lock;
@@ -48,13 +36,42 @@ typedef struct jd_App {
     u64 reloadable_dll_file_time;
 } jd_App;
 
+struct jd_PlatformWindow {
+    jd_App* app;
+    jd_Arena* arena;
+    jd_V2F pos;
+    jd_V2F size;
+    jd_V2F menu_size;
+    jd_V2I32 pos_i;
+    jd_V2I32 size_i;                                                                      
+    jd_DArray* input_events; // type: jd_InputEvent (jd_input.h)
+    
+    jd_TitleBarStyle titlebar_style;
+    jd_TitleBarFunctionPtr titlebar_function_ptr;
+    jd_TitleBarResult titlebar_result;
+    
+    b32 maximized;
+    
+    _jd_AppWindowFunction func;
+    jd_String function_name;
+    
+    HWND handle;
+    WNDCLASSA wndclass;
+    jd_String wndclass_str;
+    PIXELFORMATDESCRIPTOR pixel_format_descriptor;
+    
+    HGLRC ogl_context;
+    HDC device_context;
+    jd_Renderer* renderer;
+    
+    f32 dpi_scaling;
+    
+    jd_String title;
+    b8 closed;
+};
+
 void jd_AppSetCursor(jd_Cursor cursor) {
     switch (cursor) {
-        default:
-        case jd_Cursor_Count: {
-            return;
-        }
-        
         case jd_Cursor_Default: {
             HCURSOR win_cursor = LoadCursorA(NULL, IDC_ARROW);
             SetCursor(win_cursor);
@@ -101,6 +118,10 @@ void jd_AppSetCursor(jd_Cursor cursor) {
             HCURSOR win_cursor = LoadCursorA(NULL, IDC_WAIT);
             SetCursor(win_cursor);
             break;
+        }
+        
+        case jd_Cursor_Count: {
+            return;
         }
     }
 }
@@ -152,6 +173,32 @@ void jd_AppLoadLib(jd_App* app) {
     jd_DStringRelease(package_name_str);
 }
 
+void jd_AppUpdatePlatformWindow(jd_PlatformWindow* window) {
+    // get the size
+    RECT client_rect = {0};
+    GetClientRect(window->handle, &client_rect);
+    window->size.w = client_rect.right;
+    window->size.h = client_rect.bottom;
+    window->size_i.w = (i32)client_rect.right;
+    window->size_i.h = (i32)client_rect.bottom;
+    
+    RECT window_rect = {0};
+    GetWindowRect(window->handle, &window_rect);
+    window->pos.x = window_rect.left;
+    window->pos.y = window_rect.top;
+    window->pos_i.x = (i32)window_rect.left;
+    window->pos_i.y = (i32)window_rect.top;
+    
+    jd_RendererSetRenderSize(window->renderer, window->size);
+    jd_RendererSetDPIScale(window->renderer, window->dpi_scaling);
+    jd_UIBeginViewport(window);
+    window->titlebar_result = window->titlebar_function_ptr(window);
+    window->func(window);
+    jd_RendererDraw(window->renderer);
+    jd_ArenaPopTo(window->renderer->frame_arena, 0);
+    SwapBuffers(window->device_context);
+}
+
 void jd_AppUpdatePlatformWindows(jd_App* app) {
     jd_UserLockGet(app->lock);
     
@@ -174,6 +221,30 @@ void jd_AppUpdatePlatformWindows(jd_App* app) {
     
     for (u64 i = 0; i < app->window_count; i++) {
         jd_PlatformWindow* window = app->windows[i];
+        if (window->titlebar_result.caption_clicked) {
+            SendMessage(window->handle, WM_NCLBUTTONDOWN, HTCAPTION, MAKELPARAM(jd_AppGetMousePos(window).x, jd_AppGetMousePos(window).y));
+        }
+        
+        if (window->titlebar_result.minimize_clicked) {
+            ShowWindow(window->handle, SW_MINIMIZE);
+        }
+        
+        if (window->titlebar_result.maximize_clicked) {
+            u32 mode = (window->maximized) ? SW_NORMAL : SW_MAXIMIZE;
+            ShowWindow(window->handle, mode);
+            window->maximized = !window->maximized;
+        }
+        
+#if 0 // TODO: Need to support snap layout by hovering maximize
+        if (window->titlebar_result.maximize_hovered) {
+            SendMessage(window->handle, WM_NCHITTEST, HTMAXBUTTON, MAKELPARAM(jd_AppGetMousePos(window).x, jd_AppGetMousePos(window).y));
+        }
+#endif
+        
+        if (window->titlebar_result.close_clicked) {
+            window->closed = true;
+        }
+        
         MSG msg = {0};
         while (PeekMessage(&msg, window->handle, 0, 0, PM_REMOVE) > 0) {
             TranslateMessage(&msg);
@@ -187,28 +258,7 @@ void jd_AppUpdatePlatformWindows(jd_App* app) {
     
     for (u64 i = 0; i < app->window_count; i++) {
         jd_PlatformWindow* window = app->windows[i];
-        
-        // get the size
-        RECT client_rect = {0};
-        GetClientRect(window->handle, &client_rect);
-        window->size.w = client_rect.right;
-        window->size.h = client_rect.bottom;
-        window->size_i.w = (i32)client_rect.right;
-        window->size_i.h = (i32)client_rect.bottom;
-        
-        RECT window_rect = {0};
-        GetWindowRect(window->handle, &window_rect);
-        window->pos.x = window_rect.left;
-        window->pos.y = window_rect.top;
-        window->pos_i.x = (i32)window_rect.left;
-        window->pos_i.y = (i32)window_rect.top;
-        
-        jd_RendererSetRenderSize(window->renderer, window->size);
-        jd_RendererSetDPIScale(window->renderer, window->dpi_scaling);
-        window->func(window);
-        jd_RendererDraw(window->renderer);
-        jd_ArenaPopTo(window->renderer->frame_arena, 0);
-        SwapBuffers(window->device_context);
+        jd_AppUpdatePlatformWindow(window);
     }
     
     jd_UserLockRelease(app->lock);
@@ -229,6 +279,127 @@ void jd_AppPlatformCloseWindow(jd_PlatformWindow* window) {
     app->window_count--;
     
     jd_ArenaRelease(window->arena);
+}
+
+jd_TitleBarFunction(_jd_default_titlebar_function_platform) {
+    jd_TitleBarResult res = {0};
+    return res;
+}
+
+jd_TitleBarFunction(_jd_default_titlebar_function_custom) {
+    jd_TitleBarResult res = {0};
+    
+    jd_UIBoxRec* titlebar_parent = 0;
+    u32 dpi = GetDpiForWindow(window->handle);
+    f32 caption_y = GetSystemMetricsForDpi(SM_CYCAPTION, dpi);
+    i32 frame_y = GetSystemMetricsForDpi(SM_CYFRAME, dpi);
+    i32 padding = GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpi);
+    
+#if 1
+    {
+        jd_UIBoxConfig config = {0};
+        config.string = jd_StrLit("fake_shadow_titlebar");
+        config.rect.size.x = window->renderer->render_size.x;
+        config.rect.size.y = frame_y;
+        config.rect.pos.x  = 0.0f;
+        config.rect.pos.y  = 0.0f;
+        config.act_on_click = true;
+        config.bg_color = (jd_V4F){.2, .2, .2, 1.0f};
+        config.static_color = true;
+        config.cursor = jd_Cursor_Resize_V;
+        
+        jd_UIResult result = jd_UIBox(&config);
+    }
+#endif
+    
+    {
+        jd_UIBoxConfig config = {0};
+        config.string = jd_StrLit("titlebar");
+        config.rect.size.x = window->renderer->render_size.x;
+        config.rect.size.y = caption_y;
+        config.shadow.y = frame_y;
+        config.rect.pos.x  = 0.0f;
+        config.rect.pos.y  = frame_y;
+        config.act_on_click = true;
+        config.bg_color = (jd_V4F){.20, .20, .20, 1.0f};
+        config.static_color = true;
+        
+        jd_UIResult result = jd_UIBox(&config);
+        if (result.l_clicked) {
+            res.caption_clicked = true;
+        }
+        
+        titlebar_parent = result.box;
+    }
+    
+    b8 left = (window->titlebar_style == jd_TitleBarStyle_Left);
+    
+    {
+        jd_UIBoxConfig config = {0};
+        config.parent = titlebar_parent;
+        config.string = jd_StrLit("titlebar_closebutton");
+        config.rect.size.x = 40.0f;
+        config.rect.size.y = caption_y;
+        config.shadow.y = frame_y;
+        config.bg_color = (jd_V4F){.8, .1, .1, 1.0f};
+        if (left)
+            config.rect.pos.x  = 40.0f;
+        else
+            config.rect.pos.x  = window->renderer->render_size.x - 40.0f;
+        
+        config.rect.pos.y = frame_y;
+        jd_UIResult result = jd_UIBox(&config);
+        if (result.l_clicked) {
+            res.close_clicked = true;
+        }
+        
+    }
+    
+    {
+        jd_UIBoxConfig config = {0};
+        config.parent = titlebar_parent;
+        config.string = jd_StrLit("titlebar_maxbutton");
+        config.rect.size.x = 40.0f;
+        config.rect.size.y = caption_y;
+        config.shadow.y = frame_y;
+        config.bg_color = (jd_V4F){.1, .4, .1, 1.0f};
+        if (left)
+            config.rect.pos.x  = 80.0f;
+        else
+            config.rect.pos.x  = window->renderer->render_size.x - 80.0f;
+        
+        config.rect.pos.y = frame_y;
+        
+        jd_UIResult result = jd_UIBox(&config);
+        if (result.l_clicked) {
+            res.maximize_clicked = true;
+        }
+        
+    }
+    
+    
+    {
+        jd_UIBoxConfig config = {0};
+        config.parent = titlebar_parent;
+        config.string = jd_StrLit("titlebar_minbutton");
+        config.rect.size.x = 40.0f;
+        config.rect.size.y = caption_y;
+        config.shadow.y = frame_y;
+        config.bg_color = (jd_V4F){.6, .6, 0.0, 1.0f};
+        if (left)
+            config.rect.pos.x  = 120.0f;
+        else
+            config.rect.pos.x  = window->renderer->render_size.x - 120.0f;
+        
+        config.rect.pos.y = frame_y;
+        
+        jd_UIResult result = jd_UIBox(&config);
+        if (result.l_clicked) {
+            res.minimize_clicked = true;
+        }
+    }
+    
+    return res;
 }
 
 jd_PlatformWindow* jd_AppPlatformCreateWindow(jd_PlatformWindowConfig* config) {
@@ -255,6 +426,24 @@ jd_PlatformWindow* jd_AppPlatformCreateWindow(jd_PlatformWindowConfig* config) {
     window->title = jd_StringPush(arena, config->title);
     window->arena = arena;
     window->input_events = jd_DArrayCreate(MEGABYTES(256) / sizeof(jd_InputEvent), sizeof(jd_InputEvent));
+    window->titlebar_style = config->titlebar_style;
+    
+    switch (config->titlebar_style) {
+        case jd_TitleBarStyle_Platform: {
+            window->titlebar_function_ptr = _jd_default_titlebar_function_platform;
+            break;
+        }
+        
+        case jd_TitleBarStyle_Left:
+        case jd_TitleBarStyle_Right: {
+            window->titlebar_function_ptr = _jd_default_titlebar_function_custom;
+            break;
+        }
+    }
+    
+    if (config->titlebar_function_ptr) {
+        window->titlebar_function_ptr = config->titlebar_function_ptr;
+    }
     
     switch (config->app->mode) {
         default: break;
@@ -275,7 +464,7 @@ jd_PlatformWindow* jd_AppPlatformCreateWindow(jd_PlatformWindowConfig* config) {
             }
             
             window->function_name = jd_StringPush(arena, config->function_name);
-            window->func = (_jd_AppWindowFunction)GetProcAddress(config->app->reloadable_dll, config->function_name.mem);
+            window->func = (_jd_AppWindowFunction)GetProcAddress(config->app->reloadable_dll, window->function_name.mem);
             if (!window->func) {
                 jd_LogError("Could not find specified function in .dll!", jd_Error_FileNotFound, jd_Error_Fatal);
             }
@@ -291,16 +480,17 @@ jd_PlatformWindow* jd_AppPlatformCreateWindow(jd_PlatformWindowConfig* config) {
     wc.hInstance     = config->app->instance;
     wc.lpszClassName = window->wndclass_str.mem;
     wc.cbWndExtra    = sizeof(jd_PlatformWindow*);
+    wc.hbrBackground = NULL;
     
     RegisterClassEx(&wc);
     
     // Create the window->
-    
+    u32 win_style = WS_THICKFRAME | WS_SYSMENU | WS_MAXIMIZEBOX | WS_MINIMIZEBOX | WS_VISIBLE;
     window->handle = CreateWindowExA(
-                                     CS_OWNDC,                              // Optional window styles.
+                                     CS_OWNDC|CS_HREDRAW|CS_VREDRAW,                              // Optional window styles.
                                      window->wndclass_str.mem,               // Window class
                                      window->title.mem,                      // Window textc
-                                     WS_OVERLAPPEDWINDOW,                   // Window style
+                                     win_style,                   // Window style
                                      
                                      // Size and position
                                      CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
@@ -314,14 +504,6 @@ jd_PlatformWindow* jd_AppPlatformCreateWindow(jd_PlatformWindowConfig* config) {
     if (window->handle == NULL) {
         // err
     }
-    
-    
-    if (config->window_style == jd_WS_Dark) {
-        BOOL USE_DARK_MODE = true;
-        BOOL SET_IMMERSIVE_DARK_MODE_SUCCESS = SUCCEEDED(DwmSetWindowAttribute(window->handle, 20,
-                                                                               &USE_DARK_MODE, sizeof(USE_DARK_MODE)));
-    }
-    
     
     window->device_context = GetDC(window->handle);
     
@@ -340,12 +522,19 @@ jd_PlatformWindow* jd_AppPlatformCreateWindow(jd_PlatformWindowConfig* config) {
     dummy_wc.cbWndExtra    = sizeof(jd_PlatformWindow*);
     RegisterClassEx(&dummy_wc);
     
+    i32 window_style
+        = WS_THICKFRAME   // required for a standard resizeable window
+        | WS_SYSMENU      // Explicitly ask for the titlebar to support snapping via Win + ← / Win + →
+        | WS_MAXIMIZEBOX  // Add maximize button to support maximizing via mouse dragging
+        // to the top of the screen
+        | WS_MINIMIZEBOX  // Add minimize button to support minimizing by clicking on the taskbar icon
+        | WS_VISIBLE;     // Make window visible after it is created (not important)
     
     HWND dummy_win = CreateWindowExA(
                                      CS_OWNDC,                              // Optional window styles.
                                      "dummy_wndclass",                      // Window class
                                      window->title.mem,                      // Window textc
-                                     WS_OVERLAPPEDWINDOW,                   // Window style
+                                     window_style,                   // Window style
                                      
                                      // Size and position
                                      CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
@@ -511,9 +700,91 @@ LRESULT CALLBACK jd_PlatformWindowProc(HWND window_handle, UINT msg, WPARAM w_pa
     jd_InputEvent e = {0};
     jd_PlatformWindow* window = (jd_PlatformWindow*)GetWindowLongPtrA(window_handle, 0);
     switch (msg) {
+        if (window->titlebar_style != jd_TitleBarStyle_Platform) {
+            case WM_NCCALCSIZE: {
+                if (!w_param) return DefWindowProc(window_handle, msg, w_param, l_param);
+                u32 dpi = GetDpiForWindow(window_handle);
+                
+                i32 frame_x = GetSystemMetricsForDpi(SM_CXFRAME, dpi);
+                i32 frame_y = GetSystemMetricsForDpi(SM_CYFRAME, dpi);
+                i32 padding = GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpi);
+                
+                NCCALCSIZE_PARAMS* params = (NCCALCSIZE_PARAMS*)l_param;
+                RECT* requested_client_rect = params->rgrc;
+                
+                requested_client_rect->right -= frame_x + padding;
+                requested_client_rect->left += frame_x + padding;
+                //requested_client_rect->bottom -= frame_y + padding;
+                
+                return 0;
+            }
+            
+            case WM_NCHITTEST: {
+                // Let the default procedure handle resizing areas
+                LRESULT hit = DefWindowProc(window_handle, msg, w_param, l_param);
+                switch (hit) {
+                    case HTNOWHERE:
+                    case HTRIGHT:
+                    case HTLEFT:
+                    case HTTOPLEFT:
+                    case HTTOP:
+                    case HTTOPRIGHT:
+                    case HTBOTTOMRIGHT:
+                    case HTBOTTOM:
+                    case HTBOTTOMLEFT: {
+                        return hit;
+                    }
+                }
+                
+#if 1                
+                u32 dpi = GetDpiForWindow(window->handle);
+                i32 frame_y = GetSystemMetricsForDpi(SM_CYFRAME, dpi);
+                i32 padding = GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpi);
+                POINT cursor_point = {0};
+                cursor_point.x = GET_X_LPARAM(l_param);
+                cursor_point.y = GET_Y_LPARAM(l_param);
+                ScreenToClient(window->handle, &cursor_point);
+                if (cursor_point.y > 0 && cursor_point.y < frame_y + padding) {
+                    return HTTOP;
+                }
+#endif
+                
+                return HTCLIENT;
+            }
+            
+            
+            
+            case WM_CREATE: {
+                RECT size_rect;
+                GetWindowRect(window_handle, &size_rect);
+                
+                // Inform the application of the frame change to force redrawing with the new
+                // client area that is extended into the title bar
+                SetWindowPos(window_handle, NULL,
+                             size_rect.left, size_rect.top,
+                             size_rect.right - size_rect.left, size_rect.bottom - size_rect.top,
+                             SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE
+                             );
+                break;
+            }
+        }
+        
         case WM_DESTROY: {
             window->closed = true;
             break;
+        }
+        
+#if 1        
+        case WM_SIZE: {
+            if (window && window->renderer) {
+                jd_AppUpdatePlatformWindow(window);
+            }
+            break;
+        }
+#endif
+        
+        case WM_ERASEBKGND: {
+            return 0;
         }
         
         case WM_LBUTTONUP:
@@ -609,6 +880,21 @@ jd_App* jd_AppCreate(jd_AppConfig* config) {
 }
 
 jd_V2F jd_PlatformWindowGetDrawSize(jd_PlatformWindow* window) {
+    // get the size
+    RECT client_rect = {0};
+    GetClientRect(window->handle, &client_rect);
+    window->size.w = client_rect.right;
+    window->size.h = client_rect.bottom;
+    window->size_i.w = (i32)client_rect.right;
+    window->size_i.h = (i32)client_rect.bottom;
+    
+    RECT window_rect = {0};
+    GetWindowRect(window->handle, &window_rect);
+    window->pos.x = window_rect.left;
+    window->pos.y = window_rect.top;
+    window->pos_i.x = (i32)window_rect.left;
+    window->pos_i.y = (i32)window_rect.top;
+    
     return window->size;
 }
 

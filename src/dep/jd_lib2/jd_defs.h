@@ -90,8 +90,9 @@ typedef struct jd_V4F {
     };
 } jd_V4F;
 
+#define jd_V4FAdd(a, b) {a.x + b.x, a.y + b.y, a.w + b.w, a.h + b.h}
+
 typedef struct jd_V2U64 {
-    
     u64 x;
     u64 y;
     

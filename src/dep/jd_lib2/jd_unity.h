@@ -40,16 +40,6 @@
 
 #ifdef JD_UNITY_IMP_CHECK
 
-#include "jd_string.c"
-//#include "jd_file.c"
-#include "jd_error.c"
-#include "jd_unicode.c"
-#include "jd_data_structures.c"
-#include "jd_renderer.c"
-#include "jd_math.c"
-#include "jd_ui.c"
-#include "jd_hash.c"
-
 #ifdef JD_WINDOWS
 #include "win32_jd_locks.c"
 #include "win32_jd_memory.c"
@@ -61,6 +51,17 @@
 #ifdef JD_DEBUG
 #include "win32_jd_debug.c"
 #endif
+
+#include "jd_string.c"
+//#include "jd_file.c"
+#include "jd_error.c"
+#include "jd_unicode.c"
+#include "jd_data_structures.c"
+#include "jd_renderer.c"
+#include "jd_math.c"
+#include "jd_ui.c"
+#include "jd_hash.c"
+
 #endif
 
 #endif

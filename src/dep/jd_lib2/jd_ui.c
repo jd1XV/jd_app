@@ -92,13 +92,49 @@ jd_ForceInline b32 jd_UIRectContainsPoint(jd_UIRect r, jd_V2F p) {
 jd_UIBoxRec* jd_UIPickBoxForPos(jd_UIViewport* vp, jd_V2F pos) {
     jd_UIBoxRec* ret = 0;
     jd_UIBoxRec* b = vp->root;
-    
-    while (b != 0) {
-        if (jd_UIRectContainsPoint(b->rect, pos)) {
-            ret = b;
-        } 
-        jd_TreeTraversePreorder(b);
+    {
+        while (b != 0) {
+            if (jd_UIRectContainsPoint(b->rect, pos)) {
+                ret = b;
+            } 
+            jd_TreeTraversePreorder(b);
+        }
+        
     }
+    
+    b = vp->menu_root;
+    {
+        while (b != 0) {
+            if (jd_UIRectContainsPoint(b->rect, pos)) {
+                ret = b;
+            } 
+            jd_TreeTraversePreorder(b);
+        }
+        
+    }
+    
+    b = vp->popup_root;
+    {
+        while (b != 0) {
+            if (jd_UIRectContainsPoint(b->rect, pos)) {
+                ret = b;
+            } 
+            jd_TreeTraversePreorder(b);
+        }
+        
+    }
+    
+    b = vp->titlebar_root;
+    {
+        while (b != 0) {
+            if (jd_UIRectContainsPoint(b->rect, pos)) {
+                ret = b;
+            } 
+            jd_TreeTraversePreorder(b);
+        }
+        
+    }
+    
     
     return ret;
 }
@@ -138,73 +174,101 @@ jd_ExportFn jd_UIResult jd_UIBox(jd_UIBoxConfig* config) {
         style = jd_DArrayGetBack(_jd_internal_ui_state.style_stack);
     }
     
+    b8 act_on_click = config->act_on_click;
+    
     jd_UITag tag = jd_UITagFromString(config->string);
     jd_UIBoxRec* b = jd_UIBoxGetByTag(tag);
     
     jd_UIResult result = {0};
+    result.box = b;
     
-    jd_V4F color         = {0.6, 0.8, 0.5, 1.0f};
-    jd_V4F hovered_color = {0.3, 0.4, 0.25, 1.0f};
-    jd_V4F active_color  = {0.15, 0.2, 0.125, 1.0f};
+    jd_V4F color         = config->bg_color;
+    jd_V4F mod           = {-.15, -.15, -.15, 1.0f};
+    jd_V4F hovered_color = jd_V4FAdd(mod, config->bg_color);
+    jd_V4F active_color  = jd_V4FAdd(mod, mod);
     
     // input handling
-    
-    if (b == vp->hot) {
-        color = hovered_color;
-    }
-    
-    if (b == vp->active) {
-        jd_InputSliceForEach(i, vp->old_inputs) {
-            jd_InputEvent* e = jd_DArrayGetIndex(vp->old_inputs.array, i);
-            if (!e) { // Sanity Check
-                jd_LogError("Incorrect input slice range!", jd_Error_APIMisuse, jd_Error_Fatal);
-            }
+    if (!config->disabled) {
+        if (b == vp->hot) {
+            result.hovered = true;
+            if (!config->static_color)
+                color = hovered_color;
             
-            switch (e->key) {
-                case jd_MB_Left:
-                case jd_MB_Right:
-                case jd_MB_Middle: {
-                }
-            }
+            jd_AppSetCursor(config->cursor);
         }
         
-        color = active_color;
-    }
-    
-    if (b == vp->last_active) {
-        jd_InputSliceForEach(i, vp->old_inputs) {
-            jd_InputEvent* e = jd_DArrayGetIndex(vp->old_inputs.array, i);
-            if (!e) { // Sanity Check
-                jd_LogError("Incorrect input slice range!", jd_Error_APIMisuse, jd_Error_Fatal);
+        if (b == vp->active) {
+            jd_InputSliceForEach(i, vp->old_inputs) {
+                jd_InputEvent* e = jd_DArrayGetIndex(vp->old_inputs.array, i);
+                if (!e) { // Sanity Check
+                    jd_LogError("Incorrect input slice range!", jd_Error_APIMisuse, jd_Error_Fatal);
+                }
+                
+                if (act_on_click) {
+                    switch (e->key) {
+                        case jd_MB_Left:
+                        case jd_MB_Right:
+                        case jd_MB_Middle: {
+                            result.control_clicked = jd_InputHasMod(e, jd_KeyMod_Ctrl);
+                            result.alt_clicked     = jd_InputHasMod(e, jd_KeyMod_Alt);
+                            result.shift_clicked   = jd_InputHasMod(e, jd_KeyMod_Shift);
+                            result.l_clicked       = (e->key == jd_MB_Left);
+                            result.m_clicked       = (e->key == jd_MB_Middle);
+                            result.r_clicked       = (e->key == jd_MB_Right);
+                            break;
+                        }
+                    }
+                }
             }
             
-            switch (e->key) {
-                case jd_MB_Left:
-                case jd_MB_Right:
-                case jd_MB_Middle: {
-                    if (e->release_event && vp->hot == b) {
-                        result.control_clicked = jd_InputHasMod(e, jd_KeyMod_Ctrl);
-                        result.alt_clicked     = jd_InputHasMod(e, jd_KeyMod_Alt);
-                        result.shift_clicked   = jd_InputHasMod(e, jd_KeyMod_Shift);
-                        result.l_clicked       = (e->key == jd_MB_Left);
-                        result.m_clicked       = (e->key == jd_MB_Middle);
-                        result.r_clicked       = (e->key == jd_MB_Right);
-                        break;
+            if (!config->static_color)
+                color = active_color;
+            
+            jd_AppSetCursor(config->cursor);
+        }
+        
+        if (b == vp->last_active) {
+            jd_InputSliceForEach(i, vp->old_inputs) {
+                jd_InputEvent* e = jd_DArrayGetIndex(vp->old_inputs.array, i);
+                if (!e) { // Sanity Check
+                    jd_LogError("Incorrect input slice range!", jd_Error_APIMisuse, jd_Error_Fatal);
+                }
+                
+                switch (e->key) {
+                    case jd_MB_Left:
+                    case jd_MB_Right:
+                    case jd_MB_Middle: {
+                        if (!act_on_click) {
+                            if (e->release_event && vp->hot == b) {
+                                result.control_clicked = jd_InputHasMod(e, jd_KeyMod_Ctrl);
+                                result.alt_clicked     = jd_InputHasMod(e, jd_KeyMod_Alt);
+                                result.shift_clicked   = jd_InputHasMod(e, jd_KeyMod_Shift);
+                                result.l_clicked       = (e->key == jd_MB_Left);
+                                result.m_clicked       = (e->key == jd_MB_Middle);
+                                result.r_clicked       = (e->key == jd_MB_Right);
+                                break;
+                            }
+                        }
+                        
                     }
                 }
             }
         }
+        
     }
     
     jd_TreeLinkLastChild(parent, b);
     
     b->rect = config->rect;
-    jd_DrawRect(vp->window->renderer, b->rect.pos, b->rect.size, color);
+    
+    jd_V2F display_size = {b->rect.size.x + config->shadow.x, b->rect.size.y + config->shadow.y};
+    jd_V2F display_pos  = {b->rect.pos.x - config->shadow.x, b->rect.pos.y - config->shadow.y};
+    jd_DrawRect(vp->window->renderer, display_pos, display_size, color);
     
     return result;
 }
 
-jd_ExportFn jd_UIViewport* jd_UIBeginViewport(jd_PlatformWindow* window) {
+jd_UIViewport* jd_UIBeginViewport(jd_PlatformWindow* window) {
     if (!_jd_internal_ui_state.arena) { // not yet initialized
         _jd_internal_ui_state.arena = jd_ArenaCreate(GIGABYTES(2), KILOBYTES(4));
         _jd_internal_ui_state.box_array_size = jd_UIBox_HashTable_Size;
@@ -243,12 +307,18 @@ jd_ExportFn jd_UIViewport* jd_UIBeginViewport(jd_PlatformWindow* window) {
         vp->new_inputs.array = window->input_events;
     }
     
-    if (!vp->root) {
+    if (!vp->roots_init) {
         vp->root = jd_ArenaAlloc(_jd_internal_ui_state.arena, sizeof(jd_UIBoxRec));
-    }
-    
-    if (!vp->root_new) {
+        vp->popup_root = jd_ArenaAlloc(_jd_internal_ui_state.arena, sizeof(jd_UIBoxRec));
+        vp->menu_root = jd_ArenaAlloc(_jd_internal_ui_state.arena, sizeof(jd_UIBoxRec));
+        vp->titlebar_root = jd_ArenaAlloc(_jd_internal_ui_state.arena, sizeof(jd_UIBoxRec));
+        
         vp->root_new = jd_ArenaAlloc(_jd_internal_ui_state.arena, sizeof(jd_UIBoxRec));
+        vp->popup_root_new = jd_ArenaAlloc(_jd_internal_ui_state.arena, sizeof(jd_UIBoxRec));
+        vp->menu_root_new = jd_ArenaAlloc(_jd_internal_ui_state.arena, sizeof(jd_UIBoxRec));
+        vp->titlebar_root_new = jd_ArenaAlloc(_jd_internal_ui_state.arena, sizeof(jd_UIBoxRec));
+        
+        vp->roots_init = true;
     }
     
     vp->root->rect.size = window->size;
@@ -270,5 +340,19 @@ jd_ExportFn jd_UIViewport* jd_UIBeginViewport(jd_PlatformWindow* window) {
     vp->root_new = old_root;
     jd_TreeLinksClear(vp->root_new);
     
+    jd_UIBoxRec* old_popup_root = vp->popup_root;
+    vp->popup_root = vp->popup_root_new;
+    vp->popup_root_new = old_popup_root;
+    jd_TreeLinksClear(vp->popup_root_new);
+    
+    jd_UIBoxRec* old_menu_root = vp->menu_root;
+    vp->menu_root = vp->menu_root_new;
+    vp->menu_root_new = old_menu_root;
+    jd_TreeLinksClear(vp->menu_root_new);
+    
+    jd_UIBoxRec* old_titlebar_root = vp->titlebar_root;
+    vp->titlebar_root = vp->titlebar_root_new;
+    vp->titlebar_root_new = old_titlebar_root;
+    jd_TreeLinksClear(vp->titlebar_root_new);
     return vp;
 }

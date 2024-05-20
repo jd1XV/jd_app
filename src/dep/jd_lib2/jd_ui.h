@@ -59,15 +59,19 @@ typedef struct jd_UIViewport {
     jd_UIBoxRec* root;
     jd_UIBoxRec* popup_root;
     jd_UIBoxRec* menu_root;
+    jd_UIBoxRec* titlebar_root;
     
     jd_UIBoxRec* root_new;
     jd_UIBoxRec* popup_root_new;
     jd_UIBoxRec* menu_root_new;
+    jd_UIBoxRec* titlebar_root_new;
     
     jd_UIBoxRec* hot;
     jd_UIBoxRec* active;
     jd_UIBoxRec* last_active;
     jd_PlatformWindow* window;
+    
+    b32 roots_init;
     
     jd_InputEventSlice new_inputs;
     jd_InputEventSlice old_inputs;
@@ -96,10 +100,16 @@ typedef struct jd_UIBoxConfig {
     jd_UIBoxRec*  parent;
     jd_UIStyle*   style;
     jd_String     string;
+    jd_V4F        bg_color;
     jd_UIRect     rect;
     
+    jd_V2F        shadow;
+    
+    b8            act_on_click;
+    b8            static_color;
     b8            disabled;
     b8            label_selectable;
+    jd_Cursor     cursor;
     
     // TODO: Texture information? I feel like there's no reason to not have it this low level with this design,
     // and it makes textured rectangles a first class citizen. Thereotically, with the right application of these
@@ -107,6 +117,7 @@ typedef struct jd_UIBoxConfig {
 } jd_UIBoxConfig;
 
 jd_ExportFn jd_UIResult jd_UIBox(jd_UIBoxConfig* cfg);
+jd_ExportFn jd_UIViewport* jd_UIBeginViewport(jd_PlatformWindow* window);
 
 #ifdef JD_IMPLEMENTATION
 #include "jd_ui.c"
