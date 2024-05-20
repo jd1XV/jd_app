@@ -343,7 +343,7 @@ jd_TitleBarFunction(_jd_default_titlebar_function_custom) {
         config.shadow.y = frame_y;
         config.bg_color = (jd_V4F){.8, .1, .1, 1.0f};
         if (left)
-            config.rect.pos.x  = 40.0f;
+            config.rect.pos.x  = 0.0f;
         else
             config.rect.pos.x  = window->renderer->render_size.x - 40.0f;
         
@@ -364,7 +364,7 @@ jd_TitleBarFunction(_jd_default_titlebar_function_custom) {
         config.shadow.y = frame_y;
         config.bg_color = (jd_V4F){.1, .4, .1, 1.0f};
         if (left)
-            config.rect.pos.x  = 80.0f;
+            config.rect.pos.x  = 40.0f;
         else
             config.rect.pos.x  = window->renderer->render_size.x - 80.0f;
         
@@ -387,7 +387,7 @@ jd_TitleBarFunction(_jd_default_titlebar_function_custom) {
         config.shadow.y = frame_y;
         config.bg_color = (jd_V4F){.6, .6, 0.0, 1.0f};
         if (left)
-            config.rect.pos.x  = 120.0f;
+            config.rect.pos.x  = 80.0f;
         else
             config.rect.pos.x  = window->renderer->render_size.x - 120.0f;
         
@@ -484,8 +484,14 @@ jd_PlatformWindow* jd_AppPlatformCreateWindow(jd_PlatformWindowConfig* config) {
     
     RegisterClassEx(&wc);
     
-    // Create the window->
-    u32 win_style = WS_THICKFRAME | WS_SYSMENU | WS_MAXIMIZEBOX | WS_MINIMIZEBOX | WS_VISIBLE;
+    // Create the window
+    u32 win_style = 0;
+    if (config->titlebar_style == jd_TitleBarStyle_Platform) {
+        win_style = WS_OVERLAPPEDWINDOW;
+    } else {
+        win_style = WS_THICKFRAME | WS_SYSMENU | WS_MAXIMIZEBOX | WS_MINIMIZEBOX;
+    }
+    
     window->handle = CreateWindowExA(
                                      CS_OWNDC|CS_HREDRAW|CS_VREDRAW,                              // Optional window styles.
                                      window->wndclass_str.mem,               // Window class
@@ -498,11 +504,29 @@ jd_PlatformWindow* jd_AppPlatformCreateWindow(jd_PlatformWindowConfig* config) {
                                      NULL,       // Parent window    
                                      NULL,       // Menu
                                      config->app->instance,  // Instance handle
-                                     NULL        // Additional application data
+                                     NULL // Additional application data
                                      );
+    
     
     if (window->handle == NULL) {
         // err
+    }
+    
+    SetWindowLongPtrA(window->handle, 0, (LONG_PTR)window);
+    
+    if (window->titlebar_style != jd_TitleBarStyle_Platform) {
+        RECT size_rect;
+        GetWindowRect(window->handle, &size_rect);
+        
+        // Inform the application of the frame change to force redrawing with the new
+        // client area that is extended into the title bar
+        
+        SetWindowPos(window->handle, NULL,
+                     size_rect.left, size_rect.top,
+                     size_rect.right - size_rect.left, size_rect.bottom - size_rect.top,
+                     SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE
+                     );
+        
     }
     
     window->device_context = GetDC(window->handle);
@@ -510,9 +534,6 @@ jd_PlatformWindow* jd_AppPlatformCreateWindow(jd_PlatformWindowConfig* config) {
     if (!window->device_context) {
         // TODO: err
     }
-    
-    
-    SetWindowLongPtrA(window->handle, 0, (LONG_PTR)window);
     
     WNDCLASSEX dummy_wc = {0};
     dummy_wc.cbSize = sizeof(WNDCLASSEX);
@@ -522,19 +543,12 @@ jd_PlatformWindow* jd_AppPlatformCreateWindow(jd_PlatformWindowConfig* config) {
     dummy_wc.cbWndExtra    = sizeof(jd_PlatformWindow*);
     RegisterClassEx(&dummy_wc);
     
-    i32 window_style
-        = WS_THICKFRAME   // required for a standard resizeable window
-        | WS_SYSMENU      // Explicitly ask for the titlebar to support snapping via Win + ← / Win + →
-        | WS_MAXIMIZEBOX  // Add maximize button to support maximizing via mouse dragging
-        // to the top of the screen
-        | WS_MINIMIZEBOX  // Add minimize button to support minimizing by clicking on the taskbar icon
-        | WS_VISIBLE;     // Make window visible after it is created (not important)
     
     HWND dummy_win = CreateWindowExA(
                                      CS_OWNDC,                              // Optional window styles.
                                      "dummy_wndclass",                      // Window class
                                      window->title.mem,                      // Window textc
-                                     window_style,                   // Window style
+                                     win_style,                   // Window style
                                      
                                      // Size and position
                                      CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
@@ -700,73 +714,61 @@ LRESULT CALLBACK jd_PlatformWindowProc(HWND window_handle, UINT msg, WPARAM w_pa
     jd_InputEvent e = {0};
     jd_PlatformWindow* window = (jd_PlatformWindow*)GetWindowLongPtrA(window_handle, 0);
     switch (msg) {
-        if (window->titlebar_style != jd_TitleBarStyle_Platform) {
-            case WM_NCCALCSIZE: {
-                if (!w_param) return DefWindowProc(window_handle, msg, w_param, l_param);
-                u32 dpi = GetDpiForWindow(window_handle);
-                
-                i32 frame_x = GetSystemMetricsForDpi(SM_CXFRAME, dpi);
-                i32 frame_y = GetSystemMetricsForDpi(SM_CYFRAME, dpi);
-                i32 padding = GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpi);
-                
-                NCCALCSIZE_PARAMS* params = (NCCALCSIZE_PARAMS*)l_param;
-                RECT* requested_client_rect = params->rgrc;
-                
-                requested_client_rect->right -= frame_x + padding;
-                requested_client_rect->left += frame_x + padding;
-                //requested_client_rect->bottom -= frame_y + padding;
-                
-                return 0;
+        case WM_NCCALCSIZE: {
+            if (!w_param) return DefWindowProc(window_handle, msg, w_param, l_param);
+            if (window->titlebar_style == jd_TitleBarStyle_Platform) {
+                return DefWindowProc(window_handle, msg, w_param, l_param);;
+            }
+            u32 dpi = GetDpiForWindow(window_handle);
+            
+            i32 frame_x = GetSystemMetricsForDpi(SM_CXFRAME, dpi);
+            i32 frame_y = GetSystemMetricsForDpi(SM_CYFRAME, dpi);
+            i32 padding = GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpi);
+            
+            NCCALCSIZE_PARAMS* params = (NCCALCSIZE_PARAMS*)l_param;
+            RECT* requested_client_rect = params->rgrc;
+            
+            requested_client_rect->right -= frame_x + padding;
+            requested_client_rect->left += frame_x + padding;
+            //requested_client_rect->bottom -= frame_y + padding;
+            
+            return 0;
+        }
+        
+        case WM_NCHITTEST: {
+            // Let the default procedure handle resizing areas
+            LRESULT hit = DefWindowProc(window_handle, msg, w_param, l_param);
+            if (window->titlebar_style == jd_TitleBarStyle_Platform) {
+                return hit;
+            }
+            switch (hit) {
+                case HTNOWHERE:
+                case HTRIGHT:
+                case HTLEFT:
+                case HTTOPLEFT:
+                case HTTOP:
+                case HTTOPRIGHT:
+                case HTBOTTOMRIGHT:
+                case HTBOTTOM:
+                case HTBOTTOMLEFT: {
+                    return hit;
+                }
             }
             
-            case WM_NCHITTEST: {
-                // Let the default procedure handle resizing areas
-                LRESULT hit = DefWindowProc(window_handle, msg, w_param, l_param);
-                switch (hit) {
-                    case HTNOWHERE:
-                    case HTRIGHT:
-                    case HTLEFT:
-                    case HTTOPLEFT:
-                    case HTTOP:
-                    case HTTOPRIGHT:
-                    case HTBOTTOMRIGHT:
-                    case HTBOTTOM:
-                    case HTBOTTOMLEFT: {
-                        return hit;
-                    }
-                }
-                
 #if 1                
-                u32 dpi = GetDpiForWindow(window->handle);
-                i32 frame_y = GetSystemMetricsForDpi(SM_CYFRAME, dpi);
-                i32 padding = GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpi);
-                POINT cursor_point = {0};
-                cursor_point.x = GET_X_LPARAM(l_param);
-                cursor_point.y = GET_Y_LPARAM(l_param);
-                ScreenToClient(window->handle, &cursor_point);
-                if (cursor_point.y > 0 && cursor_point.y < frame_y + padding) {
-                    return HTTOP;
-                }
+            u32 dpi = GetDpiForWindow(window->handle);
+            i32 frame_y = GetSystemMetricsForDpi(SM_CYFRAME, dpi);
+            i32 padding = GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpi);
+            POINT cursor_point = {0};
+            cursor_point.x = GET_X_LPARAM(l_param);
+            cursor_point.y = GET_Y_LPARAM(l_param);
+            ScreenToClient(window->handle, &cursor_point);
+            if (cursor_point.y > 0 && cursor_point.y < frame_y + padding) {
+                return HTTOP;
+            }
 #endif
-                
-                return HTCLIENT;
-            }
             
-            
-            
-            case WM_CREATE: {
-                RECT size_rect;
-                GetWindowRect(window_handle, &size_rect);
-                
-                // Inform the application of the frame change to force redrawing with the new
-                // client area that is extended into the title bar
-                SetWindowPos(window_handle, NULL,
-                             size_rect.left, size_rect.top,
-                             size_rect.right - size_rect.left, size_rect.bottom - size_rect.top,
-                             SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE
-                             );
-                break;
-            }
+            return HTCLIENT;
         }
         
         case WM_DESTROY: {
