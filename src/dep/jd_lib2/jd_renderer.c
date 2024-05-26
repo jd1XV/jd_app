@@ -435,6 +435,10 @@ void jd_DrawString(jd_Renderer* renderer, jd_Typeface* face, jd_String str, jd_V
             continue;
         }
         
+        if (utf32_string.utf32[i] == 0) {
+            continue;
+        }
+        
         jd_Glyph* glyph = jd_TypefaceGetGlyph(face, utf32_string.utf32[i]);
         if (!glyph || glyph->codepoint == 0) {
             glyph = jd_TypefaceGetGlyph(face, '?');
@@ -578,7 +582,7 @@ void jd_RendererSetDPIScale(jd_Renderer* renderer, f32 scale) {
 
 void jd_RendererSetRenderSize(jd_Renderer* renderer, jd_V2F render_size) {
     renderer->render_size = render_size;
-    glViewport(0, 0, (i32)render_size.w, (i32)render_size.h);
+    glViewport(0, 0, render_size.w, render_size.h);
     glClearColor(0.33f, 0.33f, 0.33f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
     for (u64 i = 0; i < renderer->texture_pass_count; i++) {

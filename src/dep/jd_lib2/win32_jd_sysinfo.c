@@ -86,7 +86,7 @@ f64 jd_SysInfoGetPerformanceFrequencyMS() {
 
 void jd_DebugPrintSysInfo() {
     jd_CPUFlags flags = jd_SysInfoGetCPUFlags();
-    jd_DebugPrint(jd_StrLit("CPU Vector Extensns Supported:\n"));
+    jd_DebugPrint(jd_StrLit("CPU Vector Extensions Supported:\n"));
     
     if (jd_CPUFlagIsSet(flags, jd_CPUFlags_SupportsSSE)) {
         jd_DebugPrint(jd_StrLit("-- SSE\n"));

@@ -39,6 +39,7 @@ typedef struct jd_App {
 struct jd_PlatformWindow {
     jd_App* app;
     jd_Arena* arena;
+    jd_Arena* frame_arena;
     jd_V2F pos;
     jd_V2F size;
     jd_V2F menu_size;
@@ -49,6 +50,7 @@ struct jd_PlatformWindow {
     jd_TitleBarStyle titlebar_style;
     jd_TitleBarFunctionPtr titlebar_function_ptr;
     jd_TitleBarResult titlebar_result;
+    f32 custom_titlebar_size;
     
     b32 maximized;
     
@@ -66,9 +68,22 @@ struct jd_PlatformWindow {
     
     f32 dpi_scaling;
     
+    f32 frame_counter;
+    f32 frame_time;
+    jd_Timer frame_watch;
+    jd_DString* fps_counter_string;
+    
     jd_String title;
     b8 closed;
 };
+
+b32 jd_AppWindowIsMaximized(jd_PlatformWindow* window) {
+    WINDOWPLACEMENT placement = {0};
+    placement.length = sizeof(WINDOWPLACEMENT);
+    if (GetWindowPlacement(window->handle, &placement)) {
+        return (placement.showCmd == SW_SHOWMAXIMIZED);
+    } else return false;
+}
 
 void jd_AppSetCursor(jd_Cursor cursor) {
     switch (cursor) {
@@ -174,6 +189,12 @@ void jd_AppLoadLib(jd_App* app) {
 }
 
 void jd_AppUpdatePlatformWindow(jd_PlatformWindow* window) {
+    jd_ArenaPopTo(window->frame_arena, 0);
+    
+    window->frame_watch = jd_TimerStop(window->frame_watch);
+    window->frame_time = window->frame_watch.stop;
+    window->frame_watch = jd_TimerStart();
+    
     // get the size
     RECT client_rect = {0};
     GetClientRect(window->handle, &client_rect);
@@ -189,6 +210,10 @@ void jd_AppUpdatePlatformWindow(jd_PlatformWindow* window) {
     window->pos_i.x = (i32)window_rect.left;
     window->pos_i.y = (i32)window_rect.top;
     
+    u32 dpi = GetDpiForWindow(window->handle);
+    i32 frame_y = GetSystemMetricsForDpi(SM_CYFRAME, dpi);
+    i32 padding = GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpi);
+    
     jd_RendererSetRenderSize(window->renderer, window->size);
     jd_RendererSetDPIScale(window->renderer, window->dpi_scaling);
     jd_UIBeginViewport(window);
@@ -199,28 +224,44 @@ void jd_AppUpdatePlatformWindow(jd_PlatformWindow* window) {
     SwapBuffers(window->device_context);
 }
 
+void jd_WindowDrawFPS(jd_PlatformWindow* window, jd_TextOrigin origin, jd_V2F pos) {
+    if (!window->fps_counter_string) {
+        window->fps_counter_string = jd_DStringCreate(256);
+    }
+    
+    jd_DStringClear(window->fps_counter_string);
+    
+    f64 fps_f = 1000.0f / window->frame_time;
+    u32 fps_i = (u32)fps_f;
+    
+    jd_DStringAppendU32(window->fps_counter_string, fps_i, 10);
+    jd_DrawStringWithBG(window->renderer, window->renderer->default_face, jd_DStringGet(window->fps_counter_string), pos, jd_TextOrigin_BottomLeft, (jd_V4F){1.0, 1.0, 1.0, 1.0}, (jd_V4F){.2, 0.2, 0.2, 0.65}, 1280.0f);
+}
+
+
 void jd_AppUpdatePlatformWindows(jd_App* app) {
     jd_UserLockGet(app->lock);
-    
     static u64 reload_delay = 0;
-    
-    u64 last_reload_time = app->reloadable_dll_file_time;
-    u64 current_reload_time = jd_DiskGetFileLastMod(app->lib_file_name);
-    
-    if (last_reload_time < current_reload_time) {
-        if (reload_delay && reload_delay % 32 == 0) {
-            jd_AppFreeLib(app);
-            jd_AppLoadLib(app);
-            app->reloadable_dll_file_time = current_reload_time;
-            reload_delay = 0;
-        } else {
-            reload_delay++;
-        }
+    if (app->mode == JD_AM_RELOADABLE) {
+        u64 last_reload_time = app->reloadable_dll_file_time;
+        u64 current_reload_time = jd_DiskGetFileLastMod(app->lib_file_name);
         
+        if (last_reload_time < current_reload_time) {
+            if (reload_delay && reload_delay % 32 == 0) {
+                jd_AppFreeLib(app);
+                jd_AppLoadLib(app);
+                app->reloadable_dll_file_time = current_reload_time;
+                reload_delay = 0;
+            } else {
+                reload_delay++;
+            }
+            
+        }
     }
     
     for (u64 i = 0; i < app->window_count; i++) {
         jd_PlatformWindow* window = app->windows[i];
+        
         if (window->titlebar_result.caption_clicked) {
             SendMessage(window->handle, WM_NCLBUTTONDOWN, HTCAPTION, MAKELPARAM(jd_AppGetMousePos(window).x, jd_AppGetMousePos(window).y));
         }
@@ -230,9 +271,13 @@ void jd_AppUpdatePlatformWindows(jd_App* app) {
         }
         
         if (window->titlebar_result.maximize_clicked) {
-            u32 mode = (window->maximized) ? SW_NORMAL : SW_MAXIMIZE;
-            ShowWindow(window->handle, mode);
-            window->maximized = !window->maximized;
+            if (jd_AppWindowIsMaximized(window)) {
+                ShowWindow(window->handle, SW_RESTORE);
+                
+            } else {
+                ShowWindow(window->handle, SW_MAXIMIZE);
+                //SendMessage(window->handle, WM_SIZE, SIZE_MAXIMIZED, 0);
+            }
         }
         
 #if 0 // TODO: Need to support snap layout by hovering maximize
@@ -291,35 +336,34 @@ jd_TitleBarFunction(_jd_default_titlebar_function_custom) {
     
     jd_UIBoxRec* titlebar_parent = 0;
     u32 dpi = GetDpiForWindow(window->handle);
-    f32 caption_y = GetSystemMetricsForDpi(SM_CYCAPTION, dpi);
+    
+    f32 titlebar_height = (45.0f * dpi) / DEFAULT_DPI_REFERENCE;
+    {
+        const f32 borders = 2.0f;
+        SIZE titlebar_size = {0};
+        
+        HTHEME theme = OpenThemeData(window->handle, L"WINDOW");
+        if (GetThemePartSize(theme, NULL, WP_CAPTION, CS_ACTIVE, NULL, TS_TRUE, &titlebar_size) != S_OK) {
+            jd_LogError("Couldn't open theme!", jd_Error_MissingResource, jd_Error_Critical);
+        } else {
+            titlebar_height = ((f32)(titlebar_size.cy * dpi) / DEFAULT_DPI_REFERENCE) + borders;
+        }
+        
+        CloseThemeData(theme);
+    }
+    
+    window->custom_titlebar_size = titlebar_height;
     i32 frame_y = GetSystemMetricsForDpi(SM_CYFRAME, dpi);
     i32 padding = GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpi);
-    
-#if 1
-    {
-        jd_UIBoxConfig config = {0};
-        config.string = jd_StrLit("fake_shadow_titlebar");
-        config.rect.size.x = window->renderer->render_size.x;
-        config.rect.size.y = frame_y;
-        config.rect.pos.x  = 0.0f;
-        config.rect.pos.y  = 0.0f;
-        config.act_on_click = true;
-        config.bg_color = (jd_V4F){.2, .2, .2, 1.0f};
-        config.static_color = true;
-        config.cursor = jd_Cursor_Resize_V;
-        
-        jd_UIResult result = jd_UIBox(&config);
-    }
-#endif
     
     {
         jd_UIBoxConfig config = {0};
         config.string = jd_StrLit("titlebar");
         config.rect.size.x = window->renderer->render_size.x;
-        config.rect.size.y = caption_y;
+        config.rect.size.y = titlebar_height;
         config.shadow.y = frame_y;
         config.rect.pos.x  = 0.0f;
-        config.rect.pos.y  = frame_y;
+        config.rect.pos.y  = 0.0f;
         config.act_on_click = true;
         config.bg_color = (jd_V4F){.20, .20, .20, 1.0f};
         config.static_color = true;
@@ -333,21 +377,21 @@ jd_TitleBarFunction(_jd_default_titlebar_function_custom) {
     }
     
     b8 left = (window->titlebar_style == jd_TitleBarStyle_Left);
+    jd_V2F button_size = {.x = 50.0f, .y = titlebar_height};
     
     {
         jd_UIBoxConfig config = {0};
         config.parent = titlebar_parent;
         config.string = jd_StrLit("titlebar_closebutton");
-        config.rect.size.x = 40.0f;
-        config.rect.size.y = caption_y;
-        config.shadow.y = frame_y;
+        config.rect.size = button_size;
+        config.shadow.y = 0.0f;
         config.bg_color = (jd_V4F){.8, .1, .1, 1.0f};
         if (left)
             config.rect.pos.x  = 0.0f;
         else
-            config.rect.pos.x  = window->renderer->render_size.x - 40.0f;
+            config.rect.pos.x  = window->renderer->render_size.x - button_size.x;
         
-        config.rect.pos.y = frame_y;
+        config.rect.pos.y = 0.0f;
         jd_UIResult result = jd_UIBox(&config);
         if (result.l_clicked) {
             res.close_clicked = true;
@@ -359,16 +403,15 @@ jd_TitleBarFunction(_jd_default_titlebar_function_custom) {
         jd_UIBoxConfig config = {0};
         config.parent = titlebar_parent;
         config.string = jd_StrLit("titlebar_maxbutton");
-        config.rect.size.x = 40.0f;
-        config.rect.size.y = caption_y;
+        config.rect.size = button_size;
         config.shadow.y = frame_y;
         config.bg_color = (jd_V4F){.1, .4, .1, 1.0f};
         if (left)
-            config.rect.pos.x  = 40.0f;
+            config.rect.pos.x  = button_size.x;
         else
-            config.rect.pos.x  = window->renderer->render_size.x - 80.0f;
+            config.rect.pos.x  = window->renderer->render_size.x - (button_size.x * 2);
         
-        config.rect.pos.y = frame_y;
+        config.rect.pos.y = 0.0f;
         
         jd_UIResult result = jd_UIBox(&config);
         if (result.l_clicked) {
@@ -382,22 +425,38 @@ jd_TitleBarFunction(_jd_default_titlebar_function_custom) {
         jd_UIBoxConfig config = {0};
         config.parent = titlebar_parent;
         config.string = jd_StrLit("titlebar_minbutton");
-        config.rect.size.x = 40.0f;
-        config.rect.size.y = caption_y;
+        config.rect.size = button_size;
         config.shadow.y = frame_y;
         config.bg_color = (jd_V4F){.6, .6, 0.0, 1.0f};
         if (left)
-            config.rect.pos.x  = 80.0f;
+            config.rect.pos.x  = button_size.x * 2;
         else
-            config.rect.pos.x  = window->renderer->render_size.x - 120.0f;
+            config.rect.pos.x  = window->renderer->render_size.x - (button_size.x * 3);
         
-        config.rect.pos.y = frame_y;
+        config.rect.pos.y = 0.0f;
         
         jd_UIResult result = jd_UIBox(&config);
         if (result.l_clicked) {
             res.minimize_clicked = true;
         }
     }
+    
+    if (!window->maximized) {
+        jd_UIBoxConfig config = {0};
+        config.parent = titlebar_parent;
+        config.string = jd_StrLit("fake_shadow_titlebar");
+        config.rect.size.x = window->size.x;
+        config.rect.size.y = padding + frame_y;
+        config.rect.pos.x  = 0.0f;
+        config.rect.pos.y  = 0.0f;
+        config.act_on_click = true;
+        config.bg_color = (jd_V4F){.2, .2, .2, 0.0f};
+        config.static_color = true;
+        config.cursor = jd_Cursor_Resize_V;
+        
+        jd_UIResult result = jd_UIBox(&config);
+    }
+    
     
     return res;
 }
@@ -425,6 +484,7 @@ jd_PlatformWindow* jd_AppPlatformCreateWindow(jd_PlatformWindowConfig* config) {
     window->wndclass_str = jd_StringPush(arena, config->id_str);
     window->title = jd_StringPush(arena, config->title);
     window->arena = arena;
+    window->frame_arena = jd_ArenaCreate(0, 0);
     window->input_events = jd_DArrayCreate(MEGABYTES(256) / sizeof(jd_InputEvent), sizeof(jd_InputEvent));
     window->titlebar_style = config->titlebar_style;
     
@@ -449,7 +509,7 @@ jd_PlatformWindow* jd_AppPlatformCreateWindow(jd_PlatformWindowConfig* config) {
         default: break;
         
         case JD_AM_STATIC: {
-            if (config->function_ptr) {
+            if (!config->function_ptr) {
                 jd_LogError("App mode set to JD_AM_STATIC, but no Jd_AppWindowFunctionPtr supplied in jd_PlatformWindowConfig", jd_Error_APIMisuse, jd_Error_Fatal);
                 return 0;
             }
@@ -713,7 +773,16 @@ LRESULT CALLBACK jd_PlatformWindowProc(HWND window_handle, UINT msg, WPARAM w_pa
     static u32 count = 0;
     jd_InputEvent e = {0};
     jd_PlatformWindow* window = (jd_PlatformWindow*)GetWindowLongPtrA(window_handle, 0);
+    
     switch (msg) {
+        
+        case WM_SETCURSOR: {
+            if (LOWORD(l_param) == HTTOP) {
+                return 0;
+            }
+            break;
+        }
+        
         case WM_NCCALCSIZE: {
             if (!w_param) return DefWindowProc(window_handle, msg, w_param, l_param);
             if (window->titlebar_style == jd_TitleBarStyle_Platform) {
@@ -730,7 +799,10 @@ LRESULT CALLBACK jd_PlatformWindowProc(HWND window_handle, UINT msg, WPARAM w_pa
             
             requested_client_rect->right -= frame_x + padding;
             requested_client_rect->left += frame_x + padding;
-            //requested_client_rect->bottom -= frame_y + padding;
+            requested_client_rect->bottom -= frame_y + padding;
+            
+            if (jd_AppWindowIsMaximized(window))
+                requested_client_rect->top += padding;
             
             return 0;
         }
@@ -741,6 +813,7 @@ LRESULT CALLBACK jd_PlatformWindowProc(HWND window_handle, UINT msg, WPARAM w_pa
             if (window->titlebar_style == jd_TitleBarStyle_Platform) {
                 return hit;
             }
+            
             switch (hit) {
                 case HTNOWHERE:
                 case HTRIGHT:
@@ -878,6 +951,7 @@ jd_App* jd_AppCreate(jd_AppConfig* config) {
         
         jd_AppLoadLib(app);
     }
+    
     return app;
 }
 

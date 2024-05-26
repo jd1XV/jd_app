@@ -51,6 +51,7 @@ typedef struct jd_TitleBarResult {
     b8 maximize_hovered;
     b8 minimize_clicked;
     b8 close_clicked;
+    b8 top_clicked;
 } jd_TitleBarResult;
 
 typedef enum jd_Cursor {
@@ -85,6 +86,7 @@ jd_PlatformWindow* jd_AppPlatformCreateWindow(jd_PlatformWindowConfig* config);
 void       jd_AppPlatformCloseWindow(jd_PlatformWindow* window);
 b32        jd_AppPlatformUpdate(jd_App* app);
 void       jd_AppSetCursor(jd_Cursor cursor);
+jd_ExportFn void jd_WindowDrawFPS(jd_PlatformWindow* window, jd_TextOrigin origin, jd_V2F pos);
 
 
 typedef void (*_jd_AppWindowFunction)(struct jd_PlatformWindow* window);

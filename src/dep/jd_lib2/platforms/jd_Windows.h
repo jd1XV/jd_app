@@ -12,6 +12,9 @@
 #include <strsafe.h>
 #include <dwmapi.h>
 #include <vsstyle.h>
+#include <uxtheme.h>
+
+#define DEFAULT_DPI_REFERENCE 96.0f
 
 #define JD_WINDOWS
 

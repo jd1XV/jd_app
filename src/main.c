@@ -2,7 +2,6 @@
 #define JD_DEBUG
 #define JD_IMPLEMENTATION
 #include "dep/jd_lib2/jd_unity.h"
-
 #include <stdio.h>
 
 jd_AppMainFn {
@@ -15,6 +14,7 @@ jd_AppMainFn {
         .title = jd_StrLit("jd_app Test"),
         .id_str = jd_StrLit("MainWindowID"),
         .function_name = jd_StrLit("WindowFunc"),
+        //.function_ptr = WindowFunc,
         .titlebar_style = jd_TitleBarStyle_Right
     };
     

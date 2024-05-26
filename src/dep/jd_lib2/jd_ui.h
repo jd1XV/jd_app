@@ -12,17 +12,7 @@ typedef struct jd_UITag {
     u32 seed;
 } jd_UITag;
 
-typedef enum jd_UISizeRule {
-    jd_UI_SizedByLabel,
-    jd_UI_SizedAbsolute,
-    jd_UI_SizedByParent,
-    jd_UI_SizedByChildren,
-    jd_UI_SizedFillToRight,
-    jd_UI_SizeRule_Count
-} jd_UISizeRule;
-
 typedef struct jd_UIRect {
-    jd_UISizeRule rule;
     jd_V2F size;
     jd_V2F pos;
 } jd_UIRect;
@@ -34,7 +24,6 @@ typedef struct jd_UIStyle {
     jd_V4F        color_bg;
     jd_V4F        color_border;
     jd_V4F        color_label;
-    jd_UISizeRule size_rule;
     jd_V2F        padding;
     f32           corner_radius;
     f32           border;

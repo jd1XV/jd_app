@@ -7,13 +7,20 @@
 #include "jd_sysinfo.h"
 #endif
 
-typedef union jd_StopWatch {
+typedef union jd_Timer {
     i64 start;
     f64 stop;
-} jd_StopWatch; 
+} jd_Timer; 
 
-jd_ExportFn jd_ForceInline jd_StopWatch jd_StopWatchStart();
-jd_ExportFn jd_ForceInline jd_StopWatch jd_StopWatchStop(jd_StopWatch watch);
+jd_ExportFn jd_ForceInline jd_Timer jd_TimerStart();
+jd_ExportFn jd_ForceInline jd_Timer jd_TimerStop(jd_Timer watch);
+
+#define jd_FunctionTimer(fn, timer)\
+do { \
+timer = jd_TimerStart(); \
+fn;\
+timer = jd_TimerStop(timer); \
+} while (0) \
 
 #ifdef JD_IMPLEMENTATION
 #ifdef JD_WINDOWS

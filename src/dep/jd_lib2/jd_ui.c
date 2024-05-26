@@ -224,7 +224,7 @@ jd_ExportFn jd_UIResult jd_UIBox(jd_UIBoxConfig* config) {
             if (!config->static_color)
                 color = active_color;
             
-            jd_AppSetCursor(config->cursor);
+            //jd_AppSetCursor(config->cursor);
         }
         
         if (b == vp->last_active) {
