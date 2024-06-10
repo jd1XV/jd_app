@@ -19,6 +19,12 @@ jd_AppMainFn {
     };
     
     jd_PlatformWindow* main_window = jd_AppPlatformCreateWindow(&w_config);
+    
+    w_config.id_str = jd_StrLit("win2id");
+    w_config.function_name = jd_StrLit("win2func");
+    
+    jd_PlatformWindow* win2 = jd_AppPlatformCreateWindow(&w_config);
+    
     while (jd_AppIsRunning(app)) {
         jd_AppPlatformUpdate(app);
     }

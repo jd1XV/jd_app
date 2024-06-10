@@ -33,10 +33,14 @@ typedef struct jd_RWLock {
     SRWLOCK srw;
 } jd_RWLock;
 
-jd_ForceInline jd_RWLock* jd_RWLockCreate(jd_Arena* arena) {
-    jd_RWLock* lock = jd_ArenaAlloc(arena, sizeof(*lock));
-    InitializeSRWLock(&lock->srw);
+jd_ForceInline jd_RWLock jd_RWLockCreate() {
+    jd_RWLock lock = {0};
+    InitializeSRWLock(&lock.srw);
     return lock;
+}
+
+jd_ForceInline void jd_RWLockInitialize(jd_RWLock* lock) {
+    InitializeSRWLock(&lock->srw);
 }
 
 jd_ForceInline void jd_RWLockGet(jd_RWLock* lock, jd_RWLockMode mode) {

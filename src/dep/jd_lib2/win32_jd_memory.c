@@ -10,6 +10,15 @@ void jd_MemMove(void* dest, const void* src, u64 size) {
     MoveMemory(dest, src, size);
 }
 
+void* jd_HeapAlloc(u64 size) {
+    u8* ptr = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, size);
+    if (!ptr) {
+        jd_LogError("Could not get heap memory!", jd_Error_OutOfMemory, jd_Error_Fatal);
+    }
+    
+    return ptr;
+}
+
 inline u8* _jd_Internal_ArenaReserve(u64 reserve, u64 commit_block_size) {
     u8* ptr = 0;
     
@@ -46,7 +55,9 @@ jd_Arena* jd_ArenaCreate(u64 capacity, u64 commit_page_size) {
 void* jd_ArenaAlloc(jd_Arena* arena, u64 size) {
     void* result = 0;
     
-    jd_Assert(arena->pos + size < arena->cap);
+    if (arena->pos + size > arena->cap) {
+        jd_LogError("Arena has reached its capacity!", jd_Error_OutOfMemory, jd_Error_Fatal);
+    }
     
     result = arena->mem + arena->pos;
     arena->pos += size;
@@ -88,14 +99,16 @@ void jd_ArenaRelease(jd_Arena* arena) {
     VirtualFree(arena, 0, MEM_RELEASE);
 }
 
-void jd_MemSet(u8* dest, const u8 val, u64 size) {
+void jd_MemSet(void* dest, const u8 val, u64 size) {
     jd_CPUFlags flags = jd_SysInfoGetCPUFlags();
     u64 index = 0;
+    
+    u8* _dest = dest;
     
     if (jd_CPUFlagIsSet(flags, jd_CPUFlags_SupportsAVX)) {
         __m256i val32 = _mm256_set1_epi8(val);
         for (; index + 32 <= size; index += 32) {
-            _mm256_storeu_si256((__m256i*)(dest + index), val32);
+            _mm256_storeu_si256((__m256i*)(_dest + index), val32);
         }
         
     }
@@ -105,14 +118,14 @@ void jd_MemSet(u8* dest, const u8 val, u64 size) {
     if (jd_CPUFlagIsSet(flags, jd_CPUFlags_SupportsSSE2)) {
         __m128i val16 = _mm_set1_epi8(val);
         for (; index + 16 <= size; index += 16) {
-            _mm_storeu_si128((__m128i*)(dest + index), val16);
+            _mm_storeu_si128((__m128i*)(_dest + index), val16);
         }
     }
     
     if (index == size) return;
     
     for (; index < size; index++) {
-        dest[index] = val;
+        _dest[index] = val;
     }
 }
 
@@ -146,7 +159,7 @@ b32 jd_MemCmp(void* a_, void* b_, u64 size) {
             __m128i res = _mm_cmpeq_epi8(_a, _b);
             i32 mask = _mm_movemask_epi8(res);
             
-            if (mask != 0xFFFFFFFF) {
+            if (mask != 0xFFFF) {
                 return false;
             }
         }

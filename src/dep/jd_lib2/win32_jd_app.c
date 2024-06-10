@@ -1,7 +1,3 @@
-#ifndef JD_RENDERER_H
-#include "jd_renderer.h"
-#endif
-
 #include "../glad/glad_wgl.h"
 
 static const jd_String app_manifest = jd_StrConst("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>" \
@@ -28,12 +24,17 @@ typedef struct jd_App {
     struct jd_PlatformWindow* windows[JD_APP_MAX_WINDOWS];
     u64 window_count;
     
+    b32 renderer_initialized;
+    
     jd_AppMode mode;
     HMODULE reloadable_dll;
     jd_Cursor cursor;
     jd_String lib_file_name;
     jd_String lib_copied_file_name;
     u64 reloadable_dll_file_time;
+    HGLRC ogl_context;
+    
+    PIXELFORMATDESCRIPTOR pixel_format_descriptor;
 } jd_App;
 
 struct jd_PlatformWindow {
@@ -43,8 +44,8 @@ struct jd_PlatformWindow {
     jd_V2F pos;
     jd_V2F size;
     jd_V2F menu_size;
-    jd_V2I32 pos_i;
-    jd_V2I32 size_i;                                                                      
+    jd_V2I pos_i;
+    jd_V2I size_i;                                                                      
     jd_DArray* input_events; // type: jd_InputEvent (jd_input.h)
     
     jd_TitleBarStyle titlebar_style;
@@ -52,19 +53,14 @@ struct jd_PlatformWindow {
     jd_TitleBarResult titlebar_result;
     f32 custom_titlebar_size;
     
-    b32 maximized;
-    
     _jd_AppWindowFunction func;
     jd_String function_name;
     
     HWND handle;
     WNDCLASSA wndclass;
     jd_String wndclass_str;
-    PIXELFORMATDESCRIPTOR pixel_format_descriptor;
     
-    HGLRC ogl_context;
     HDC device_context;
-    jd_Renderer* renderer;
     
     f32 dpi_scaling;
     
@@ -214,13 +210,16 @@ void jd_AppUpdatePlatformWindow(jd_PlatformWindow* window) {
     i32 frame_y = GetSystemMetricsForDpi(SM_CYFRAME, dpi);
     i32 padding = GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpi);
     
-    jd_RendererSetRenderSize(window->renderer, window->size);
-    jd_RendererSetDPIScale(window->renderer, window->dpi_scaling);
+    wglMakeCurrent(window->device_context, window->app->ogl_context);
+    jd_RendererGet()->current_window = window;
+    jd_RendererBegin(window->size);
     jd_UIBeginViewport(window);
-    window->titlebar_result = window->titlebar_function_ptr(window);
+    jd_UISeedPushPtr(window);
     window->func(window);
-    jd_RendererDraw(window->renderer);
-    jd_ArenaPopTo(window->renderer->frame_arena, 0);
+    window->titlebar_result = window->titlebar_function_ptr(window);
+    jd_UISeedPop();
+    jd_RendererDraw();
+    jd_ArenaPopTo(jd_RendererGet()->frame_arena, 0);
     SwapBuffers(window->device_context);
 }
 
@@ -235,7 +234,7 @@ void jd_WindowDrawFPS(jd_PlatformWindow* window, jd_TextOrigin origin, jd_V2F po
     u32 fps_i = (u32)fps_f;
     
     jd_DStringAppendU32(window->fps_counter_string, fps_i, 10);
-    jd_DrawStringWithBG(window->renderer, window->renderer->default_face, jd_DStringGet(window->fps_counter_string), pos, jd_TextOrigin_BottomLeft, (jd_V4F){1.0, 1.0, 1.0, 1.0}, (jd_V4F){.2, 0.2, 0.2, 0.65}, 1280.0f);
+    jd_DrawStringWithBG(jd_StrLit("OS_BaseFontWindows"), jd_DStringGet(window->fps_counter_string), pos, origin, (jd_V4F){1.0, 1.0, 1.0, 1.0}, (jd_V4F){.2, 0.2, 0.2, 0.65}, 1280.0f);
 }
 
 
@@ -322,9 +321,12 @@ void jd_AppPlatformCloseWindow(jd_PlatformWindow* window) {
     }
     
     app->window_count--;
-    
+    DestroyWindow(window->handle);
     jd_ArenaRelease(window->arena);
+    
 }
+
+
 
 jd_TitleBarFunction(_jd_default_titlebar_function_platform) {
     jd_TitleBarResult res = {0};
@@ -337,7 +339,7 @@ jd_TitleBarFunction(_jd_default_titlebar_function_custom) {
     jd_UIBoxRec* titlebar_parent = 0;
     u32 dpi = GetDpiForWindow(window->handle);
     
-    f32 titlebar_height = (45.0f * dpi) / DEFAULT_DPI_REFERENCE;
+    f32 titlebar_height = (45.0f * dpi) / JD_DEFAULT_DPI_REFERENCE;
     {
         const f32 borders = 2.0f;
         SIZE titlebar_size = {0};
@@ -346,7 +348,7 @@ jd_TitleBarFunction(_jd_default_titlebar_function_custom) {
         if (GetThemePartSize(theme, NULL, WP_CAPTION, CS_ACTIVE, NULL, TS_TRUE, &titlebar_size) != S_OK) {
             jd_LogError("Couldn't open theme!", jd_Error_MissingResource, jd_Error_Critical);
         } else {
-            titlebar_height = ((f32)(titlebar_size.cy * dpi) / DEFAULT_DPI_REFERENCE) + borders;
+            titlebar_height = ((f32)(titlebar_size.cy * dpi) / JD_DEFAULT_DPI_REFERENCE) + borders;
         }
         
         CloseThemeData(theme);
@@ -359,13 +361,13 @@ jd_TitleBarFunction(_jd_default_titlebar_function_custom) {
     {
         jd_UIBoxConfig config = {0};
         config.string = jd_StrLit("titlebar");
-        config.rect.size.x = window->renderer->render_size.x;
+        config.rect.size.x = window->size.x;
         config.rect.size.y = titlebar_height;
-        config.shadow.y = frame_y;
+        //config.shadow.y = frame_y;
         config.rect.pos.x  = 0.0f;
         config.rect.pos.y  = 0.0f;
         config.act_on_click = true;
-        config.bg_color = (jd_V4F){.20, .20, .20, 1.0f};
+        config.bg_color = (jd_V4F){.10, .10, .10, 1.0f};
         config.static_color = true;
         
         jd_UIResult result = jd_UIBox(&config);
@@ -384,12 +386,12 @@ jd_TitleBarFunction(_jd_default_titlebar_function_custom) {
         config.parent = titlebar_parent;
         config.string = jd_StrLit("titlebar_closebutton");
         config.rect.size = button_size;
-        config.shadow.y = 0.0f;
+        //config.shadow.y = 0.0f;
         config.bg_color = (jd_V4F){.8, .1, .1, 1.0f};
         if (left)
             config.rect.pos.x  = 0.0f;
         else
-            config.rect.pos.x  = window->renderer->render_size.x - button_size.x;
+            config.rect.pos.x  = window->size.x - button_size.x;
         
         config.rect.pos.y = 0.0f;
         jd_UIResult result = jd_UIBox(&config);
@@ -404,12 +406,11 @@ jd_TitleBarFunction(_jd_default_titlebar_function_custom) {
         config.parent = titlebar_parent;
         config.string = jd_StrLit("titlebar_maxbutton");
         config.rect.size = button_size;
-        config.shadow.y = frame_y;
         config.bg_color = (jd_V4F){.1, .4, .1, 1.0f};
         if (left)
             config.rect.pos.x  = button_size.x;
         else
-            config.rect.pos.x  = window->renderer->render_size.x - (button_size.x * 2);
+            config.rect.pos.x  = window->size.x - (button_size.x * 2);
         
         config.rect.pos.y = 0.0f;
         
@@ -420,18 +421,16 @@ jd_TitleBarFunction(_jd_default_titlebar_function_custom) {
         
     }
     
-    
     {
         jd_UIBoxConfig config = {0};
         config.parent = titlebar_parent;
         config.string = jd_StrLit("titlebar_minbutton");
         config.rect.size = button_size;
-        config.shadow.y = frame_y;
         config.bg_color = (jd_V4F){.6, .6, 0.0, 1.0f};
         if (left)
             config.rect.pos.x  = button_size.x * 2;
         else
-            config.rect.pos.x  = window->renderer->render_size.x - (button_size.x * 3);
+            config.rect.pos.x  = window->size.x - (button_size.x * 3);
         
         config.rect.pos.y = 0.0f;
         
@@ -441,7 +440,7 @@ jd_TitleBarFunction(_jd_default_titlebar_function_custom) {
         }
     }
     
-    if (!window->maximized) {
+    if (!jd_AppWindowIsMaximized(window)) {
         jd_UIBoxConfig config = {0};
         config.parent = titlebar_parent;
         config.string = jd_StrLit("fake_shadow_titlebar");
@@ -457,8 +456,13 @@ jd_TitleBarFunction(_jd_default_titlebar_function_custom) {
         jd_UIResult result = jd_UIBox(&config);
     }
     
-    
     return res;
+}
+
+void jd_AppLoadSystemFont(jd_Arena* arena) {
+    jd_File segoe_ui = jd_DiskFileReadFromPath(arena, jd_StrLit("C:\\Windows\\Fonts\\arial.ttf"), false);
+    jd_FontCreateEmpty(jd_StrLit("OS_BaseFontWindows"), MEGABYTES(32), 16);
+    jd_FontAddTypefaceFromMemory(jd_StrLit("OS_BaseFontWindows"), segoe_ui, &jd_unicode_range_all, 11, 192);
 }
 
 jd_PlatformWindow* jd_AppPlatformCreateWindow(jd_PlatformWindowConfig* config) {
@@ -595,72 +599,9 @@ jd_PlatformWindow* jd_AppPlatformCreateWindow(jd_PlatformWindowConfig* config) {
         // TODO: err
     }
     
-    WNDCLASSEX dummy_wc = {0};
-    dummy_wc.cbSize = sizeof(WNDCLASSEX);
-    dummy_wc.lpfnWndProc   = DefWindowProc;
-    dummy_wc.hInstance     = config->app->instance;
-    dummy_wc.lpszClassName = "dummy_wndclass";
-    dummy_wc.cbWndExtra    = sizeof(jd_PlatformWindow*);
-    RegisterClassEx(&dummy_wc);
-    
-    
-    HWND dummy_win = CreateWindowExA(
-                                     CS_OWNDC,                              // Optional window styles.
-                                     "dummy_wndclass",                      // Window class
-                                     window->title.mem,                      // Window textc
-                                     win_style,                   // Window style
-                                     
-                                     // Size and position
-                                     CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
-                                     
-                                     NULL,       // Parent window    
-                                     NULL,       // Menu
-                                     config->app->instance,  // Instance handle
-                                     NULL        // Additional application data
-                                     );
-    
-    if (dummy_win == NULL) {
-        // err
-    }
-    
-    HDC dummy_hdc = GetDC(dummy_win);
-    if (!dummy_hdc) {
-        // err
-    }
-    
-    PIXELFORMATDESCRIPTOR pfd = {
-        sizeof(PIXELFORMATDESCRIPTOR),
-        1,
-        PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,    //Flags
-        PFD_TYPE_RGBA,        // The kind of framebuffer. RGBA or palette.
-        32,                   // Colordepth of the framebuffer.
-        0, 0, 0, 0, 0, 0,
-        0,
-        0,
-        0,
-        0, 0, 0, 0,
-        24,                   // Number of bits for the depthbuffer
-        8,                    // Number of bits for the stencilbuffer
-        0,                    // Number of Aux buffers in the framebuffer.
-        PFD_MAIN_PLANE,
-        0,
-        0, 0, 0
-    };
-    
-    i32 pf = ChoosePixelFormat(dummy_hdc, &pfd);
-    if (pf == 0) {
-        // TODO: err
-    }
-    
-    if (!(SetPixelFormat(dummy_hdc, pf, &window->pixel_format_descriptor))) {
-        // TODO: err
-    }
-    
-    HGLRC fake_context = wglCreateContext(dummy_hdc);
-    wglMakeCurrent(dummy_hdc, fake_context);
-    
-    gladLoadGL();
-    gladLoadWGL(dummy_hdc);
+    HWND dummy_win = 0;
+    HDC dummy_hdc = 0;
+    HGLRC fake_context = 0;
     
     const i32 pixel_attribs[] = {
         WGL_DRAW_TO_WINDOW_ARB, GL_TRUE,
@@ -674,26 +615,106 @@ jd_PlatformWindow* jd_AppPlatformCreateWindow(jd_PlatformWindowConfig* config) {
     };
     
     const i32 ctx_attribs[] = {
-        WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
+        WGL_CONTEXT_MAJOR_VERSION_ARB, 4,
         WGL_CONTEXT_MINOR_VERSION_ARB, 3,
         0
     };
     
-    u32 num_formats = 0;
+    if (!config->app->renderer_initialized) {
+        WNDCLASSEX dummy_wc = {0};
+        dummy_wc.cbSize = sizeof(WNDCLASSEX);
+        dummy_wc.lpfnWndProc   = DefWindowProc;
+        dummy_wc.hInstance     = GetModuleHandle(NULL);
+        dummy_wc.lpszClassName = "dummy_wndclass";
+        dummy_wc.cbWndExtra    = sizeof(jd_PlatformWindow*);
+        RegisterClassEx(&dummy_wc);
+        u32 win_style = WS_OVERLAPPEDWINDOW;
+        
+        dummy_win = CreateWindowExA(
+                                    CS_OWNDC,                              // Optional window styles.
+                                    "dummy_wndclass",                      // Window class
+                                    "dummy_window",                      // Window textc
+                                    win_style,                   // Window style
+                                    
+                                    // Size and position
+                                    CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
+                                    
+                                    NULL,       // Parent window    
+                                    NULL,       // Menu
+                                    GetModuleHandle(NULL),  // Instance handle
+                                    NULL        // Additional application data
+                                    );
+        
+        if (dummy_win == NULL) {
+            // err
+        }
+        
+        dummy_hdc = GetDC(dummy_win);
+        if (!dummy_hdc) {
+            // err
+        }
+        
+        PIXELFORMATDESCRIPTOR pfd = {
+            sizeof(PIXELFORMATDESCRIPTOR),
+            1,
+            PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,    //Flags
+            PFD_TYPE_RGBA,        // The kind of framebuffer. RGBA or palette.
+            32,                   // Colordepth of the framebuffer.
+            0, 0, 0, 0, 0, 0,
+            0,
+            0,
+            0,
+            0, 0, 0, 0,
+            24,                   // Number of bits for the depthbuffer
+            8,                    // Number of bits for the stencilbuffer
+            0,                    // Number of Aux buffers in the framebuffer.
+            PFD_MAIN_PLANE,
+            0,
+            0, 0, 0
+        };
+        
+        i32 pf = ChoosePixelFormat(dummy_hdc, &pfd);
+        if (pf == 0) {
+            // TODO: err
+        }
+        
+        if (!(SetPixelFormat(dummy_hdc, pf, &pfd))) {
+            // TODO: err
+        }
+        
+        fake_context = wglCreateContext(dummy_hdc);
+        wglMakeCurrent(dummy_hdc, fake_context);
+        
+        gladLoadGL();
+        gladLoadWGL(dummy_hdc);
+        
+        u32 num_formats = 0;
+        
+        wglChoosePixelFormatARB(window->device_context, pixel_attribs, 0, 1, &pf, &num_formats);
+        SetPixelFormat(window->device_context, pf, &window->app->pixel_format_descriptor);
+        config->app->ogl_context = wglCreateContextAttribsARB(window->device_context, 0, ctx_attribs);
+        
+        wglMakeCurrent(dummy_hdc, 0);
+        wglDeleteContext(fake_context);
+        
+    } else {
+        u32 num_formats = 0;
+        i32 pf = 0;
+        wglChoosePixelFormatARB(window->device_context, pixel_attribs, 0, 1, &pf, &num_formats);
+        SetPixelFormat(window->device_context, pf, &window->app->pixel_format_descriptor);
+    }
     
-    wglChoosePixelFormatARB(window->device_context, pixel_attribs, 0, 1, &pf, &num_formats);
-    SetPixelFormat(window->device_context, pf, &window->pixel_format_descriptor);
-    window->ogl_context = wglCreateContextAttribsARB(window->device_context, 0, ctx_attribs);
-    
-    wglMakeCurrent(dummy_hdc, 0);
-    wglDeleteContext(fake_context);
-    
-    wglMakeCurrent(window->device_context, window->ogl_context);
+    wglMakeCurrent(window->device_context, config->app->ogl_context);
     wglSwapIntervalEXT(0);
     ShowWindow(window->handle, SW_SHOW);
     
-    window->renderer = jd_RendererCreate(window);
-    DestroyWindow(dummy_win);
+    if (!config->app->renderer_initialized) {
+        jd_RendererInit();
+        jd_AppLoadSystemFont(config->app->arena);
+        config->app->renderer_initialized = true;
+        DestroyWindow(dummy_win);
+    }
+    
     jd_UserLockGet(config->app->lock);
     config->app->windows[config->app->window_count] = window;
     config->app->window_count++;
@@ -828,7 +849,6 @@ LRESULT CALLBACK jd_PlatformWindowProc(HWND window_handle, UINT msg, WPARAM w_pa
                 }
             }
             
-#if 1                
             u32 dpi = GetDpiForWindow(window->handle);
             i32 frame_y = GetSystemMetricsForDpi(SM_CYFRAME, dpi);
             i32 padding = GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpi);
@@ -836,10 +856,10 @@ LRESULT CALLBACK jd_PlatformWindowProc(HWND window_handle, UINT msg, WPARAM w_pa
             cursor_point.x = GET_X_LPARAM(l_param);
             cursor_point.y = GET_Y_LPARAM(l_param);
             ScreenToClient(window->handle, &cursor_point);
-            if (cursor_point.y > 0 && cursor_point.y < frame_y + padding) {
+            if (!jd_AppWindowIsMaximized(window) && cursor_point.y > 0 && cursor_point.y < frame_y + padding) {
                 return HTTOP;
             }
-#endif
+            
             
             return HTCLIENT;
         }
@@ -849,14 +869,14 @@ LRESULT CALLBACK jd_PlatformWindowProc(HWND window_handle, UINT msg, WPARAM w_pa
             break;
         }
         
-#if 1        
+        
         case WM_SIZE: {
-            if (window && window->renderer) {
+            if (window && window->app->renderer_initialized) {
                 jd_AppUpdatePlatformWindow(window);
             }
             break;
         }
-#endif
+        
         
         case WM_ERASEBKGND: {
             return 0;

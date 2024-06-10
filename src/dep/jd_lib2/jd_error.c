@@ -60,6 +60,9 @@ void _jd_LogError(jd_String func, jd_String msg, jd_String filename, u32 line, j
         u32 code = error->code;
         jd_ErrorLogFlushToDisk();
         jd_UserLockRelease(_jd_internal_error_log->lock);
+#ifdef JD_DEBUG
+        jd_DebugBreak();
+#endif
         jd_ProcessExit(code);
     }
     

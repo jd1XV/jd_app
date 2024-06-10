@@ -18,17 +18,19 @@ jd_ForceInline void* jd_DArrayGetIndex(jd_DArray* d_array, u64 index) {
 }
 
 jd_ForceInline void* jd_DArrayGetBack(jd_DArray* d_array) {
-    return jd_DArrayGetIndex(d_array, d_array->view.count - 1);
+    return jd_DArrayGetIndex(d_array, d_array->count - 1);
 }
 
 jd_ForceInline void* jd_DArrayPushBack(jd_DArray* d_array, void* data) { 
     void* ptr = jd_ArenaAlloc(d_array->arena, d_array->stride);
     if (!ptr) return 0;
     
-    if (data != 0) {
+    if (data) {
         jd_MemCpy(ptr, data, d_array->stride);
     }
-    d_array->view.count++;
+    
+    d_array->count++;
+    d_array->view.size += d_array->stride;
     return ptr;
 }
 
@@ -39,27 +41,27 @@ jd_ForceInline void* jd_DArrayPushAtIndex(jd_DArray* d_array, u64 index, void* d
     u8* next = insert + d_array->stride;
     jd_MemMove(next, insert, space_in_front);
     if (data) jd_MemCpy(insert, data, d_array->stride);
-    d_array->view.count++;
+    d_array->count++;
+    d_array->view.size += d_array->stride;
     return insert;
 }
 
 jd_ForceInline b32 jd_DArrayPopIndex(jd_DArray* d_array, u64 index) { 
-    if (d_array->view.count == 0) return false;
-    if (index > d_array->view.count - 1) return false;
+    if (d_array->count == 0) return false;
+    if (index > d_array->count - 1) return false;
     
     u8* ptr = jd_DArrayGetIndex(d_array, index);
-    if (index < d_array->view.count - 1) {
-        jd_MemMove(ptr, ptr + d_array->stride, d_array->stride * (d_array->view.count - (index + 1)));
+    if (index < d_array->count - 1) {
+        jd_MemMove(ptr, ptr + d_array->stride, d_array->stride * (d_array->count - (index + 1)));
     }
     
-    jd_DArrayClearToIndex(d_array, (d_array->view.count - 1));
-    d_array->view.count--;
+    jd_DArrayClearToIndex(d_array, (d_array->count - 1));
+    d_array->view.size -= d_array->stride;
     return true;
 }
 
 jd_ForceInline b32 jd_DArrayPopBack(jd_DArray* d_array) { 
-    jd_DArrayPopIndex(d_array, d_array->view.count - 1);
-    d_array->view.count--;
+    jd_DArrayPopIndex(d_array, d_array->count - 1);
     return true;
 }
 
@@ -80,13 +82,15 @@ jd_ForceInline b32 jd_DArrayClearNoDecommit(jd_DArray* d_array) {
 
 jd_ForceInline b32 jd_DArrayClearToIndex(jd_DArray* d_array, u64 index) { 
     jd_ArenaPopTo(d_array->arena, sizeof(jd_DArray) + (d_array->stride * index));
-    d_array->view.count = index;
+    d_array->count = index;
+    d_array->view.size = index * d_array->stride;
     return true;
 }
 
 jd_ForceInline b32 jd_DArrayClearToIndexNoDecommit(jd_DArray* d_array, u64 index) {
-    d_array->view.count = index;
-    d_array->arena->pos = sizeof(jd_Arena) + sizeof(jd_DArray);
+    d_array->count = index;
+    d_array->view.size = index * d_array->stride;
+    d_array->arena->pos = sizeof(jd_Arena) + sizeof(jd_DArray) + (index * d_array->stride);
     return true;
 }
 

@@ -76,3 +76,12 @@ u32 jd_HashStrToU32(jd_String input_str, u32 seed) {
     
     return hash;
 }
+
+u32 jd_HashU64toU32(u64 val, u32 seed) {
+    jd_String val_as_string = {
+        .mem = (u8*)&val,
+        .count = sizeof(val)
+    };
+    
+    return jd_HashStrToU32(val_as_string, seed);
+}

@@ -10,6 +10,7 @@
 
 u32 jd_HashU32toU32(u32 in, u32 seed);
 u32 jd_HashStrToU32(jd_String input_str, u32 seed);
+u32 jd_HashU64toU32(u64 val, u32 seed);
 
 #ifdef JD_IMPLEMENTATION
 #include "jd_hash.c"

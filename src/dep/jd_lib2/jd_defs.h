@@ -95,10 +95,32 @@ typedef struct jd_V4F {
 typedef struct jd_V2U64 {
     u64 x;
     u64 y;
-    
 } jd_V2U64;
 
-typedef struct jd_V2I32 {
+
+typedef struct jd_V2U {
+    u32 x;
+    u32 y;
+} jd_V2U;
+
+
+typedef struct jd_V3U {
+    union {
+        struct {
+            u32 x;
+            u32 y;
+            u32 z;
+        };
+        struct {
+            u32 u;
+            u32 v;
+            u32 w;
+        };
+    };
+    
+} jd_V3U;
+
+typedef struct jd_V2I {
     union {
         struct {
             i32 x;
@@ -110,7 +132,7 @@ typedef struct jd_V2I32 {
         };
     };
     
-} jd_V2I32;
+} jd_V2I;
 
 #pragma section("jd_readonlysec", read)
 #define jd_ReadOnly __declspec(allocate("jd_readonlysec"))

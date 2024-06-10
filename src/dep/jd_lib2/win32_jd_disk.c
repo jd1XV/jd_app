@@ -31,7 +31,7 @@ u64 jd_DiskGetFileLastMod(jd_String path) {
 
 //jd_StringList jd_DiskDirectoryListFiles(jd_String path, jd_String extension, b32 recursive);
 
-jd_File jd_DiskFileReadFromPath(jd_Arena* arena, jd_String path) {
+jd_File jd_DiskFileReadFromPath(jd_Arena* arena, jd_String path, b32 null_terminate) {
     jd_File file = {0};
     
     SYSTEM_INFO sysinfo = {0};
@@ -56,6 +56,9 @@ jd_File jd_DiskFileReadFromPath(jd_Arena* arena, jd_String path) {
     HANDLE fmo_handle = CreateFileMappingA(handle, NULL, PAGE_READONLY, 0, 0, NULL);
     
     u8* view = MapViewOfFile(fmo_handle, FILE_MAP_READ, 0, 0, 0);
+    
+    if (null_terminate)
+        file.size += 1;
     
     file.mem = jd_ArenaAlloc(arena, sizeof(u8) * file.size);
     jd_MemCpy(file.mem, view, file.size);

@@ -1,4 +1,4 @@
-static inline void _jd_UTF8toUTF32(jd_UTFDecodedString* dec_str, jd_Arena* arena, jd_String input, b32 validate) {
+jd_ForceInline static void _jd_UTF8toUTF32(jd_UTFDecodedString* dec_str, jd_String input, b32 validate) {
     
     static const u8 length_table[] = {
         1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -10,9 +10,6 @@ static inline void _jd_UTF8toUTF32(jd_UTFDecodedString* dec_str, jd_Arena* arena
     static const i64 mask_ascii = 0x8080808080808080ll;
     
     for (u32 i = 0; i < input.count;) {
-        if (input.mem[i] == 0xC2) {
-            int x = 0;
-        }
         if (i + 8 < input.count) {
             u64 chunk = *(u64*)(input.mem + i);
             u8* chunk_bytes = (u8*)&chunk;
@@ -90,7 +87,7 @@ jd_UTFDecodedString jd_UnicodeDecodeUTF8String(jd_Arena* arena, jd_UnicodeTF tf,
         
         case jd_UnicodeTF_UTF32: {
             dec_str.utf32 = jd_ArenaAlloc(arena, input.count * 4);
-            _jd_UTF8toUTF32(&dec_str, arena, input, validate);
+            _jd_UTF8toUTF32(&dec_str, input, validate);
         } break;
         
         case jd_UnicodeTF_UTF16: {

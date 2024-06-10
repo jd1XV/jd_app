@@ -16,6 +16,8 @@ typedef struct jd_Arena {
     u64 _commit_page_size;
 } jd_Arena;
 
+jd_ExportFn void*     jd_HeapAlloc(u64 size);
+
 jd_ExportFn jd_Arena* jd_ArenaCreate(u64 reserve, u64 commit_block_size);
 jd_ExportFn void*     jd_ArenaAlloc(jd_Arena* arena, u64 size);
 jd_ExportFn jd_View   jd_ArenaAllocView(jd_Arena* arena, u64 size);

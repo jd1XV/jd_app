@@ -92,8 +92,6 @@ typedef struct jd_UIBoxConfig {
     jd_V4F        bg_color;
     jd_UIRect     rect;
     
-    jd_V2F        shadow;
-    
     b8            act_on_click;
     b8            static_color;
     b8            disabled;
@@ -107,6 +105,8 @@ typedef struct jd_UIBoxConfig {
 
 jd_ExportFn jd_UIResult jd_UIBox(jd_UIBoxConfig* cfg);
 jd_ExportFn jd_UIViewport* jd_UIBeginViewport(jd_PlatformWindow* window);
+jd_ExportFn jd_ForceInline void jd_UISeedPushPtr(void* ptr);
+jd_ExportFn jd_ForceInline void jd_UISeedPop();
 
 #ifdef JD_IMPLEMENTATION
 #include "jd_ui.c"

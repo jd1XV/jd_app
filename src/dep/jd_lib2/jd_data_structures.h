@@ -41,13 +41,13 @@ do { \
 void* _next = x->next; \
 x->next = y; \
 x->next->next = _next; \
-x->next->last = x; \
+x->next->prev = x; \
 } while (0) \
 
 #define jd_DLinkPrev(x, y) \
 do { \
 void* _prev = x->prev; \
-x->prev = y; \
+(x->prev = y; \
 x->prev->prev = _prev; \
 x->prev->next = x; \
 } while (0) \
@@ -93,7 +93,7 @@ void* _fc = p->first_child; \
 c->parent = p; \
 c->next = _fc; \
 c->prev = 0; \
-if (p->first_child) p->first_child->next = c; \
+if (p->first_child) p->first_child->prev = c; \
 if (!p->last_child) p->last_child = c; \
 p->first_child = c; \
 } while (0) \
@@ -112,7 +112,7 @@ if (x->first_child) { \
 x = x->first_child; \
 break; \
 } \
-if (x->next) { \
+else if (x->next) { \
 x = x->next; \
 break; \
 } \
@@ -129,6 +129,7 @@ x = x->next; \
 typedef struct jd_DArray {
     jd_Arena* arena;
     u64       stride;
+    u64       count;
     jd_View   view;
     jd_RWLock* lock;
 } jd_DArray;

@@ -17,8 +17,9 @@
 #define JD_APP_MAX_WINDOWS 2048
 
 typedef struct jd_PlatformWindow jd_PlatformWindow;
-jd_V2F jd_PlatformWindowGetDrawSize(jd_PlatformWindow* window);
-u32 jd_PlatformWindowGetDPI(jd_PlatformWindow* window);
+jd_ExportFn jd_V2F jd_PlatformWindowGetDrawSize(jd_PlatformWindow* window);
+jd_ExportFn jd_V2F jd_PlatformGetMonitorDPI();
+jd_ExportFn u32 jd_PlatformWindowGetDPI(jd_PlatformWindow* window);
 jd_ExportFn jd_V2F jd_AppGetMousePos(jd_PlatformWindow* window);
 
 typedef struct jd_App jd_App;

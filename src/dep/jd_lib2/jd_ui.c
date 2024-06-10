@@ -44,6 +44,20 @@ jd_ExportFn jd_UITag jd_UITagFromString(jd_String str) {
     return t;
 }
 
+jd_ExportFn jd_ForceInline void jd_UISeedPushPtr(void* ptr) {
+    u64 ptru = (u64)ptr;
+    u32 hash = jd_HashU64toU32(ptru, 7);
+    jd_DArrayPushBack(_jd_internal_ui_state.seeds, &hash);
+}
+
+jd_ExportFn jd_ForceInline void jd_UISeedPop() {
+#ifdef JD_DEBUG
+    if (!_jd_internal_ui_state.seeds->count)
+        jd_LogError("Seed stack is empty! Mismatched Push/Pop pair", jd_Error_APIMisuse, jd_Error_Fatal);
+#endif
+    jd_DArrayPopBack(_jd_internal_ui_state.seeds);
+}
+
 jd_ExportFn void jd_UIStylePush(jd_UIStyle* style) {
     jd_DArrayPushBack(_jd_internal_ui_state.style_stack, style);
 }
@@ -61,9 +75,9 @@ jd_ExportFn jd_UIBoxRec* jd_UIBoxGetByTag(jd_UITag tag) {
     }
     
     while (b->next_with_same_hash != 0) {
-        b = b->next_with_same_hash;
         if (b->tag.key == tag.key && b->tag.seed == tag.seed)
             break;
+        b = b->next_with_same_hash;
     }
     
     if (b->tag.key != tag.key || b->tag.seed != tag.seed) {
@@ -161,7 +175,7 @@ void jd_UIPickActiveBox(jd_UIViewport* vp) {
     }
 }
 
-jd_ExportFn jd_UIResult jd_UIBox(jd_UIBoxConfig* config) {
+jd_UIResult jd_UIBox(jd_UIBoxConfig* config) {
     jd_UIViewport* vp = jd_UIViewportGetCurrent();
     
     jd_UIBoxRec* parent = config->parent;
@@ -261,9 +275,9 @@ jd_ExportFn jd_UIResult jd_UIBox(jd_UIBoxConfig* config) {
     
     b->rect = config->rect;
     
-    jd_V2F display_size = {b->rect.size.x + config->shadow.x, b->rect.size.y + config->shadow.y};
-    jd_V2F display_pos  = {b->rect.pos.x - config->shadow.x, b->rect.pos.y - config->shadow.y};
-    jd_DrawRect(vp->window->renderer, display_pos, display_size, color);
+    jd_V2F display_size = {b->rect.size.x, b->rect.size.y};
+    jd_V2F display_pos  = {b->rect.pos.x, b->rect.pos.y};
+    jd_DrawRect(display_pos, display_size, color);
     
     return result;
 }
@@ -278,10 +292,6 @@ jd_UIViewport* jd_UIBeginViewport(jd_PlatformWindow* window) {
         
         jd_UIStyle style = {0};
         jd_DArrayPushBack(_jd_internal_ui_state.style_stack, &style);
-        
-        u32 seed = 63;
-        
-        jd_DArrayPushBack(_jd_internal_ui_state.seeds, &seed);
     }
     
     jd_UIViewport* vp = 0;
@@ -326,14 +336,12 @@ jd_UIViewport* jd_UIBeginViewport(jd_PlatformWindow* window) {
     // Get new inputs
     vp->old_inputs = vp->new_inputs;
     vp->new_inputs.index = vp->old_inputs.range;
-    vp->new_inputs.range = vp->old_inputs.array->view.count;
+    vp->new_inputs.range = vp->old_inputs.array->count;
     
     vp->hot = 0;
     
     jd_V2F mouse_pos = jd_AppGetMousePos(vp->window); // Real time mouse information used for setting the hot item
     vp->hot          = jd_UIPickBoxForPos(vp, mouse_pos);
-    
-    jd_UIPickActiveBox(vp);
     
     jd_UIBoxRec* old_root = vp->root;
     vp->root = vp->root_new;
@@ -354,5 +362,8 @@ jd_UIViewport* jd_UIBeginViewport(jd_PlatformWindow* window) {
     vp->titlebar_root = vp->titlebar_root_new;
     vp->titlebar_root_new = old_titlebar_root;
     jd_TreeLinksClear(vp->titlebar_root_new);
+    
+    jd_UIPickActiveBox(vp);
+    
     return vp;
 }

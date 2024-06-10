@@ -14,11 +14,12 @@
 #include <vsstyle.h>
 #include <uxtheme.h>
 
-#define DEFAULT_DPI_REFERENCE 96.0f
+#define JD_DEFAULT_DPI_REFERENCE 96.0f
 
 #define JD_WINDOWS
 
 #define jd_ProcessExit(x) ExitProcess(x)
+#define jd_DebugBreak()   DebugBreak();
 
 #ifdef JD_CONSOLE
 #define jd_AppMainFn i32 main()
