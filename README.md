@@ -19,6 +19,6 @@ jd_app is in the very early stages, but is being designed from the ground up wit
 - Ryan Fleury (https://www.rfleury.com/)
 - Allen Webster (https://mr4th.com/)
 - Casey Muratori (https://mollyrocket.com/)
-- Omar Cornut (https://github.com/ocornut/imgui)
+- Omar Cornut (https://github.com/ocornut)
 
 *All rights reserved by the author. Repository is public for portfolio purposes. No warranty or license is implied by the public release of this code.*
