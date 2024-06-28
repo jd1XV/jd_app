@@ -742,7 +742,6 @@ void jd_RendererInit() {
     glGetIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS, &max_texture_depth);
     
     renderer->max_texture_depth = max_texture_depth;
-    
     renderer->max_texture_units = max_texture_units;
     
     glGenVertexArrays(1, &objects->vao);
@@ -766,10 +765,6 @@ void jd_RendererInit() {
     
     glEnableVertexAttribArray(2);
     glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(jd_GLVertex), (void*)pos);
-    pos += sizeof(jd_V4F);
-    
-    glEnableVertexAttribArray(3);
-    glVertexAttribIPointer(3, 1, GL_UNSIGNED_INT, sizeof(jd_GLVertex), (void*)pos);
     
     //glBindBuffer(GL_ARRAY_BUFFER, objects->vbo);
     glBufferData(GL_ARRAY_BUFFER, MEGABYTES(1) * sizeof(jd_GLVertex), NULL, GL_DYNAMIC_DRAW);
