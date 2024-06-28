@@ -33,6 +33,7 @@
 #include "jd_app.h"
 #include "jd_ui.h"
 #include "jd_timer.h"
+#include "jd_databank.h"
 
 #ifdef JD_DEBUG
 #include "jd_debug.h"
@@ -61,6 +62,7 @@
 #include "jd_math.c"
 #include "jd_ui.c"
 #include "jd_hash.c"
+#include "jd_databank.c"
 
 #endif
 

@@ -34,6 +34,21 @@ jd_ForceInline void* jd_DArrayPushBack(jd_DArray* d_array, void* data) {
     return ptr;
 }
 
+
+jd_ForceInline void* jd_DArrayPushBackV(jd_DArray* d_array, u64 count, void* data) {
+    void* ptr = jd_ArenaAlloc(d_array->arena, (d_array->stride * count));
+    if (!ptr) return 0;
+    
+    if (data) {
+        jd_MemCpy(ptr, data, (d_array->stride * count));
+    }
+    
+    d_array->count += count;
+    d_array->view.size += (d_array->stride * count);
+    return ptr;
+}
+
+
 jd_ForceInline void* jd_DArrayPushAtIndex(jd_DArray* d_array, u64 index, void* data) { 
     u64 space_in_front = (d_array->arena->pos - (d_array->stride * index));
     u8* space = jd_ArenaAlloc(d_array->arena, d_array->stride);
@@ -43,6 +58,18 @@ jd_ForceInline void* jd_DArrayPushAtIndex(jd_DArray* d_array, u64 index, void* d
     if (data) jd_MemCpy(insert, data, d_array->stride);
     d_array->count++;
     d_array->view.size += d_array->stride;
+    return insert;
+}
+
+jd_ForceInline void* jd_DArrayPushAtIndexV(jd_DArray* d_array, u64 index, u64 count, void* data) {
+    u64 space_in_front = (d_array->arena->pos - (d_array->stride * index));
+    u8* space = jd_ArenaAlloc(d_array->arena, d_array->stride * count);
+    u8* insert = jd_DArrayGetIndex(d_array, index);
+    u8* next = insert + (d_array->stride * count);
+    jd_MemMove(next, insert, space_in_front);
+    if (data) jd_MemCpy(insert, data, (d_array->stride * count));
+    d_array->count += count;
+    d_array->view.size += (d_array->stride) * count;
     return insert;
 }
 

@@ -98,6 +98,58 @@ jd_UTFDecodedString jd_UnicodeDecodeUTF8String(jd_Arena* arena, jd_UnicodeTF tf,
     return dec_str;
 }
 
+u32 jd_UnicodeDecodeUTF8Codepoint(jd_String string, u64* index) {
+    static const u8 length_table[] = {
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 3, 3, 4, 0
+    };
+    static const i32 masks[]  = {0x00, 0x7f, 0x1f, 0x0f, 0x07};
+    
+    u64 i = *index;
+    
+    if (i >= string.count) {
+        return 0;
+    }
+    
+    u32 length = length_table[string.mem[i] >> 3];
+    
+    if (i + length > string.count) {
+        jd_LogError("Stream too short for UTF8 value", jd_Error_BadInput, jd_Error_Critical);
+        return 0;
+    }
+    
+    u32 codepoint = 0;
+    
+    switch (length) {
+        case 1: {
+            codepoint |= string.mem[i];
+        } break;
+        
+        case 2: {
+            codepoint |= (string.mem[i] & masks[2]) << 6;
+            codepoint |= (string.mem[i + 1] & 0x3f) << 0;
+        } break;
+        
+        case 3: {
+            codepoint |= (string.mem[i] & masks[3]) << 12;
+            codepoint |= (string.mem[i + 1] & 0x3f) << 6;
+            codepoint |= (string.mem[i + 2] & 0x3f) << 0;
+        } break;
+        
+        case 4: {
+            codepoint |= (string.mem[i] & masks[4]) << 18;
+            codepoint |= (string.mem[i + 1] & 0x3f) << 12;
+            codepoint |= (string.mem[i + 2] & 0x3f) << 6;
+            codepoint |= (string.mem[i + 3] & 0x3f) << 0;
+        } break;
+    }
+    
+    *index += length;
+    
+    return codepoint;
+    
+}
+
 // 0xxxxxxx
 // 110xxxxx 10xxxxxx
 // 1110xxxx 10xxxxxx 10xxxxxx

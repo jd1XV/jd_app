@@ -90,7 +90,8 @@ typedef struct jd_V4F {
     };
 } jd_V4F;
 
-#define jd_V4FAdd(a, b) {a.x + b.x, a.y + b.y, a.w + b.w, a.h + b.h}
+#define jd_V4FAddRGB(a, b) {a.x + b.x, a.y + b.y, a.w + b.w, a.h}
+#define jd_V4FSubRGB(a, b) {a.x - b.x, a.y - b.y, a.w - b.w, a.h}
 
 typedef struct jd_V2U64 {
     u64 x;
@@ -102,7 +103,6 @@ typedef struct jd_V2U {
     u32 x;
     u32 y;
 } jd_V2U;
-
 
 typedef struct jd_V3U {
     union {
@@ -133,6 +133,32 @@ typedef struct jd_V2I {
     };
     
 } jd_V2I;
+
+typedef struct jd_RectF32 {
+    union {
+        struct {
+            jd_V2F min;
+            jd_V2F max;
+        };
+        
+        struct {
+            f32 x0;
+            f32 x1;
+            f32 y0;
+            f32 y1;
+        };
+    };
+    
+} jd_RectF32;
+
+typedef struct jd_u128 {
+    u64 lo;
+    u64 hi;
+} jd_u128;
+
+#define jd_u128_EQ(a, b) (a.lo == b.lo && a.hi == b.hi)
+
+#define jd_u128_Max (1 << 128ULL)
 
 #pragma section("jd_readonlysec", read)
 #define jd_ReadOnly __declspec(allocate("jd_readonlysec"))

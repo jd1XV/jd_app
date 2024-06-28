@@ -3,10 +3,27 @@
 #define JD_IMPLEMENTATION
 #include "dep/jd_lib2/jd_unity.h"
 #include <stdio.h>
+#include <stdlib.h>
 
 jd_AppMainFn {
     jd_DebugPrintSysInfo();
     jd_ErrorLogInit(jd_StrLit("error_logs/log.txt"), 128);
+    
+    jd_DataBankConfig cfg = {0};
+    jd_DataBank* db = jd_DataBankCreate(&cfg);
+    jd_DataNode* employees = jd_DataBankAddRecord(db->root, jd_StrLit("employees"));
+    jd_DataBankAddRecord(db->root, jd_StrLit("projects"));
+    jd_DataBankAddRecord(db->root, jd_StrLit("owners"));
+    jd_DataBankAddRecord(db->root, jd_StrLit("documents"));
+    
+    jd_DataNode* employee = jd_DataBankAddRecord(employees, jd_StrLit("employee"));
+    
+    jd_Value name_value = jd_ValueCastString(jd_StrLit("Abe Simpson"));
+    jd_Value years_exp_value = jd_ValueCastU64(5);
+    
+    jd_DataPointAdd(employee, jd_StrLit("name"), name_value);
+    jd_DataPointAdd(employee, jd_StrLit("years_exp"), years_exp_value);
+    
     jd_App* app = jd_AppCreate(&(jd_AppConfig){JD_AM_RELOADABLE, jd_StrLit("jd_app_test")});
     
     jd_PlatformWindowConfig w_config = {

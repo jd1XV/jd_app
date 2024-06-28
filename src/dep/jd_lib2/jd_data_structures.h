@@ -100,6 +100,11 @@ p->first_child = c; \
 
 #define jd_TreeLinksClear(x) \
 do { \
+if (x->parent) { \
+if (x->parent->first_child == x) x->parent->first_child = x->next; \
+if (x->parent->last_child == x)  x->parent->last_child = x->prev; \
+} \
+\
 jd_DLinksClear(x); \
 x->parent = 0; \
 x->last_child = 0; \
@@ -148,6 +153,14 @@ jd_ExportFn b32        jd_DArrayClearToIndex(jd_DArray* d_array, u64 index);
 jd_ExportFn b32        jd_DArrayClearNoDecommit(jd_DArray* d_array);
 jd_ExportFn b32        jd_DArrayClearToIndexNoDecommit(jd_DArray* d_array, u64 index);
 jd_ExportFn void       jd_DArrayRelease(jd_DArray* d_array);
+
+typedef struct jd_PrefixNode {
+    u32 value; // support unicode by default (i think)
+    b8  end;
+    void* payload;
+    u64   payload_size;
+    jd_Node(jd_PrefixNode);
+} jd_PrefixNode;
 
 #ifdef JD_IMPLEMENTATION
 #include "jd_data_structures.c"

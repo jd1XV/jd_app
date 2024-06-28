@@ -11,6 +11,7 @@ typedef struct jd_Internal_UIState {
     
     jd_DArray* seeds;       // u32
     jd_DArray* style_stack; // jd_UIBoxStyle
+    jd_DArray* font_id_stack; // jd_String
 } jd_Internal_UIState;
 
 static jd_Internal_UIState _jd_internal_ui_state = {0};
@@ -58,11 +59,11 @@ jd_ExportFn jd_ForceInline void jd_UISeedPop() {
     jd_DArrayPopBack(_jd_internal_ui_state.seeds);
 }
 
-jd_ExportFn void jd_UIStylePush(jd_UIStyle* style) {
+void jd_UIStylePush(jd_UIStyle* style) {
     jd_DArrayPushBack(_jd_internal_ui_state.style_stack, style);
 }
 
-jd_ExportFn void jd_UIStylePop() {
+void jd_UIStylePop() {
     jd_DArrayPopBack(_jd_internal_ui_state.style_stack); 
 }
 
@@ -97,9 +98,9 @@ jd_ExportFn jd_UIBoxRec* jd_UIBoxGetByTag(jd_UITag tag) {
     return b;
 }
 
-jd_ForceInline b32 jd_UIRectContainsPoint(jd_UIRect r, jd_V2F p) {
-    jd_V2F min = r.pos;
-    jd_V2F max = {r.pos.x + r.size.x, r.pos.y + r.size.y};
+jd_ForceInline b32 jd_UIRectContainsPoint(jd_RectF32 r, jd_V2F p) {
+    jd_V2F min = r.min;
+    jd_V2F max = {r.min.x + r.max.x, r.min.y + r.max.y};
     return ((p.x > min.x && p.x < max.x) && (p.y > min.y && p.y < max.y));
 }
 
@@ -175,6 +176,14 @@ void jd_UIPickActiveBox(jd_UIViewport* vp) {
     }
 }
 
+void jd_UIPushFont(jd_String font_id) {
+    jd_DArrayPushBack(_jd_internal_ui_state.font_id_stack, &font_id);
+}
+
+void jd_UIPopFont() {
+    jd_DArrayPopBack(_jd_internal_ui_state.font_id_stack);
+}
+
 jd_UIResult jd_UIBox(jd_UIBoxConfig* config) {
     jd_UIViewport* vp = jd_UIViewportGetCurrent();
     
@@ -190,16 +199,15 @@ jd_UIResult jd_UIBox(jd_UIBoxConfig* config) {
     
     b8 act_on_click = config->act_on_click;
     
-    jd_UITag tag = jd_UITagFromString(config->string);
+    jd_UITag tag = jd_UITagFromString(config->string_id);
     jd_UIBoxRec* b = jd_UIBoxGetByTag(tag);
     
     jd_UIResult result = {0};
     result.box = b;
     
-    jd_V4F color         = config->bg_color;
-    jd_V4F mod           = {-.15, -.15, -.15, 1.0f};
-    jd_V4F hovered_color = jd_V4FAdd(mod, config->bg_color);
-    jd_V4F active_color  = jd_V4FAdd(mod, mod);
+    jd_V4F color         = style->color_button;
+    jd_V4F hovered_color = jd_V4FMul4(color, style->color_hover_mod);
+    jd_V4F active_color  = jd_V4FMul4(color, style->color_active_mod);
     
     // input handling
     if (!config->disabled) {
@@ -275,9 +283,18 @@ jd_UIResult jd_UIBox(jd_UIBoxConfig* config) {
     
     b->rect = config->rect;
     
-    jd_V2F display_size = {b->rect.size.x, b->rect.size.y};
-    jd_V2F display_pos  = {b->rect.pos.x, b->rect.pos.y};
-    jd_DrawRect(display_pos, display_size, color);
+    jd_V2F rect_size = {b->rect.max.x, b->rect.max.y};
+    jd_V2F rect_pos  = {b->rect.min.x, b->rect.min.y};
+    jd_DrawRect(rect_pos, rect_size, color);
+    if (config->label.count > 0) {
+        jd_String* font_id = jd_DArrayGetBack(_jd_internal_ui_state.font_id_stack);
+        jd_V2F string_pos = rect_pos;
+        
+        f32 style_scaling = jd_PlatformWindowGetDPIScale(vp->window);
+        string_pos.x += style->padding.x * style_scaling;
+        string_pos.y += style->padding.y * style_scaling;
+        jd_DrawString(*font_id, config->label, string_pos, jd_TextOrigin_TopLeft, style->label_color, 0.0f);
+    }
     
     return result;
 }
@@ -289,6 +306,7 @@ jd_UIViewport* jd_UIBeginViewport(jd_PlatformWindow* window) {
         _jd_internal_ui_state.box_array = jd_ArenaAlloc(_jd_internal_ui_state.arena, sizeof(jd_UIBoxRec) * jd_UIBox_HashTable_Size);
         _jd_internal_ui_state.seeds = jd_DArrayCreate(2048, sizeof(u32));
         _jd_internal_ui_state.style_stack = jd_DArrayCreate(2048, sizeof(jd_UIStyle));
+        _jd_internal_ui_state.font_id_stack = jd_DArrayCreate(2048, sizeof(jd_String));
         
         jd_UIStyle style = {0};
         jd_DArrayPushBack(_jd_internal_ui_state.style_stack, &style);
@@ -331,7 +349,7 @@ jd_UIViewport* jd_UIBeginViewport(jd_PlatformWindow* window) {
         vp->roots_init = true;
     }
     
-    vp->root->rect.size = window->size;
+    vp->root->rect.max = window->size;
     
     // Get new inputs
     vp->old_inputs = vp->new_inputs;

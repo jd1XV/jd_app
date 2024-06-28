@@ -326,18 +326,19 @@ void jd_AppPlatformCloseWindow(jd_PlatformWindow* window) {
     
 }
 
-
-
 jd_TitleBarFunction(_jd_default_titlebar_function_platform) {
     jd_TitleBarResult res = {0};
     return res;
 }
+
 
 jd_TitleBarFunction(_jd_default_titlebar_function_custom) {
     jd_TitleBarResult res = {0};
     
     jd_UIBoxRec* titlebar_parent = 0;
     u32 dpi = GetDpiForWindow(window->handle);
+    
+    jd_UIPushFont(jd_StrLit("OS_BaseFontWindows"));
     
     f32 titlebar_height = (45.0f * dpi) / JD_DEFAULT_DPI_REFERENCE;
     {
@@ -358,16 +359,19 @@ jd_TitleBarFunction(_jd_default_titlebar_function_custom) {
     i32 frame_y = GetSystemMetricsForDpi(SM_CYFRAME, dpi);
     i32 padding = GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpi);
     
+    jd_UIStyle menu_style = jd_default_style_dark;
+    menu_style.color_button = menu_style.color_menu;
+    
+    jd_UIStylePush(&menu_style);
     {
         jd_UIBoxConfig config = {0};
-        config.string = jd_StrLit("titlebar");
-        config.rect.size.x = window->size.x;
-        config.rect.size.y = titlebar_height;
-        //config.shadow.y = frame_y;
-        config.rect.pos.x  = 0.0f;
-        config.rect.pos.y  = 0.0f;
+        config.string_id = jd_StrLit("titlebar");
+        config.label = window->app->package_name;
+        config.rect.max.x = window->size.x;
+        config.rect.max.y = titlebar_height;
+        config.rect.min.x  = 0.0f;
+        config.rect.min.y  = 0.0f;
         config.act_on_click = true;
-        config.bg_color = (jd_V4F){.10, .10, .10, 1.0f};
         config.static_color = true;
         
         jd_UIResult result = jd_UIBox(&config);
@@ -377,23 +381,25 @@ jd_TitleBarFunction(_jd_default_titlebar_function_custom) {
         
         titlebar_parent = result.box;
     }
+    jd_UIStylePop();
     
+    jd_UIStylePush(&jd_default_style_dark);
     b8 left = (window->titlebar_style == jd_TitleBarStyle_Left);
-    jd_V2F button_size = {.x = 50.0f, .y = titlebar_height};
+    jd_V2F button_size = {.x = (40.0f * dpi) / JD_DEFAULT_DPI_REFERENCE, .y = titlebar_height};
     
     {
         jd_UIBoxConfig config = {0};
         config.parent = titlebar_parent;
-        config.string = jd_StrLit("titlebar_closebutton");
-        config.rect.size = button_size;
-        //config.shadow.y = 0.0f;
-        config.bg_color = (jd_V4F){.8, .1, .1, 1.0f};
-        if (left)
-            config.rect.pos.x  = 0.0f;
-        else
-            config.rect.pos.x  = window->size.x - button_size.x;
+        config.string_id = jd_StrLit("titlebar_closebutton");
+        config.label = jd_StrLit("X");
+        config.rect.max = button_size;
         
-        config.rect.pos.y = 0.0f;
+        if (left)
+            config.rect.min.x  = 0.0f;
+        else
+            config.rect.min.x  = window->size.x - button_size.x;
+        
+        config.rect.min.y = 0.0f;
         jd_UIResult result = jd_UIBox(&config);
         if (result.l_clicked) {
             res.close_clicked = true;
@@ -404,15 +410,16 @@ jd_TitleBarFunction(_jd_default_titlebar_function_custom) {
     {
         jd_UIBoxConfig config = {0};
         config.parent = titlebar_parent;
-        config.string = jd_StrLit("titlebar_maxbutton");
-        config.rect.size = button_size;
-        config.bg_color = (jd_V4F){.1, .4, .1, 1.0f};
-        if (left)
-            config.rect.pos.x  = button_size.x;
-        else
-            config.rect.pos.x  = window->size.x - (button_size.x * 2);
+        config.string_id = jd_StrLit("titlebar_maxbutton");
+        config.label = jd_StrLit("+");
+        config.rect.max = button_size;
         
-        config.rect.pos.y = 0.0f;
+        if (left)
+            config.rect.min.x  = button_size.x;
+        else
+            config.rect.min.x  = window->size.x - (button_size.x * 2);
+        
+        config.rect.min.y = 0.0f;
         
         jd_UIResult result = jd_UIBox(&config);
         if (result.l_clicked) {
@@ -424,15 +431,16 @@ jd_TitleBarFunction(_jd_default_titlebar_function_custom) {
     {
         jd_UIBoxConfig config = {0};
         config.parent = titlebar_parent;
-        config.string = jd_StrLit("titlebar_minbutton");
-        config.rect.size = button_size;
-        config.bg_color = (jd_V4F){.6, .6, 0.0, 1.0f};
-        if (left)
-            config.rect.pos.x  = button_size.x * 2;
-        else
-            config.rect.pos.x  = window->size.x - (button_size.x * 3);
+        config.string_id = jd_StrLit("titlebar_minbutton");
+        config.label = jd_StrLit("_");
+        config.rect.max = button_size;
         
-        config.rect.pos.y = 0.0f;
+        if (left)
+            config.rect.min.x  = button_size.x * 2;
+        else
+            config.rect.min.x  = window->size.x - (button_size.x * 3);
+        
+        config.rect.min.y = 0.0f;
         
         jd_UIResult result = jd_UIBox(&config);
         if (result.l_clicked) {
@@ -440,21 +448,27 @@ jd_TitleBarFunction(_jd_default_titlebar_function_custom) {
         }
     }
     
+    jd_UIStylePop();
+    
     if (!jd_AppWindowIsMaximized(window)) {
+        menu_style.color_button.a = 0.0f;
+        jd_UIStylePush(&menu_style);
         jd_UIBoxConfig config = {0};
         config.parent = titlebar_parent;
-        config.string = jd_StrLit("fake_shadow_titlebar");
-        config.rect.size.x = window->size.x;
-        config.rect.size.y = padding + frame_y;
-        config.rect.pos.x  = 0.0f;
-        config.rect.pos.y  = 0.0f;
+        config.string_id = jd_StrLit("fake_shadow_titlebar");
+        config.rect.max.x = window->size.x;
+        config.rect.max.y = padding + frame_y;
+        config.rect.min.x  = 0.0f;
+        config.rect.min.y  = 0.0f;
         config.act_on_click = true;
-        config.bg_color = (jd_V4F){.2, .2, .2, 0.0f};
         config.static_color = true;
         config.cursor = jd_Cursor_Resize_V;
         
         jd_UIResult result = jd_UIBox(&config);
+        jd_UIStylePop();
     }
+    
+    jd_UIPopFont();
     
     return res;
 }
@@ -997,4 +1011,8 @@ jd_V2F jd_PlatformWindowGetDrawSize(jd_PlatformWindow* window) {
 u32 jd_PlatformWindowGetDPI(jd_PlatformWindow* window) {
     u32 dpi = GetDpiForWindow(window->handle);
     return dpi;
+}
+
+f32 jd_PlatformWindowGetDPIScale(jd_PlatformWindow* window) {
+    return (GetDpiForWindow(window->handle) / JD_DEFAULT_DPI_REFERENCE);
 }

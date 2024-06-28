@@ -37,6 +37,7 @@ typedef struct jd_UTFDecodedString {
 
 jd_UTFDecodedString jd_UnicodeDecodeUTF8String(jd_Arena* arena, jd_UnicodeTF tf, jd_String input, b32 validate);
 jd_String jd_UnicodeEncodeUTF32toUTF8(jd_Arena* arena, jd_UTFDecodedString input, b32 validate);
+jd_ForceInline u32 jd_UnicodeDecodeUTF8Codepoint(jd_String string, u64* index);
 
 #ifdef JD_IMPLEMENTATION
 #include "jd_unicode.c"
