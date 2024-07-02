@@ -172,3 +172,8 @@ void jd_DStringAppendU64(jd_DString* d_string, u64 num, u32 radix) {
 void jd_DStringAppendI64(jd_DString* d_string, i64 num, u32 radix) {
     
 }
+
+void jd_DStringAppendBin(jd_DString* d_string, u64 size, void* ptr) {
+    u8* dst = jd_ArenaAlloc(d_string->arena, size);
+    jd_MemCpy(dst, ptr, size);
+}

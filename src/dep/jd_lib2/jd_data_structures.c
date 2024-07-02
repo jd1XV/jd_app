@@ -124,3 +124,23 @@ jd_ForceInline b32 jd_DArrayClearToIndexNoDecommit(jd_DArray* d_array, u64 index
 void jd_DArrayRelease(jd_DArray* d_array) { 
     jd_ArenaRelease(d_array->arena);
 }
+
+jd_DFile* jd_DFileCreate(u64 max_size) {
+    jd_Arena* arena = jd_ArenaCreate(max_size, 0);
+    
+    jd_DFile* file = jd_ArenaAlloc(arena, sizeof(*file));
+    file->arena = arena;
+    file->view = (jd_View){arena->mem + arena->pos, 0};
+    
+    return file;
+}
+
+void jd_DFileAppendSized(jd_DFile* df, u64 size, void* ptr) {
+    u8* dst = jd_ArenaAlloc(df->arena, size);
+    jd_MemCpy(dst, ptr, size);
+    df->view.size += size;
+}
+
+void jd_DFileRelease(jd_DFile* df) {
+    jd_ArenaRelease(df->arena);
+}

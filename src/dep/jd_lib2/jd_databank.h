@@ -29,7 +29,8 @@ typedef enum jd_DataType {
     jd_DataType_f32 =     1 << 8,
     jd_DataType_f64 =     1 << 9,
     jd_DataType_Record =  1 << 10,
-    jd_DataType_Count =   1 << 11
+    jd_DataType_Root   =  1 << 11,
+    jd_DataType_Count
 } jd_DataType;
 
 typedef struct jd_Value {
@@ -48,6 +49,10 @@ typedef struct jd_Value {
     };
 } jd_Value;
 
+typedef struct jd_DataNodeOptions {
+    jd_String display;
+} jd_DataNodeOptions;
+
 typedef struct jd_DataNode {
     struct jd_DataBank* bank;
     
@@ -55,6 +60,10 @@ typedef struct jd_DataNode {
     
     jd_String key;
     jd_Value  value;
+    
+    jd_String display;
+    
+    u32 slot_taken;
     
     struct jd_DataNode* next_with_same_hash;
     
@@ -80,12 +89,19 @@ typedef struct jd_DataBankConfig {
     jd_DataType disabled_types; // |= types to this flag to disable them
     u64 total_memory_cap;
     u64 primary_key_hash_table_slot_count;
+    u64 primary_key_index;
 } jd_DataBankConfig;
 
 jd_ExportFn jd_DataBank*  jd_DataBankCreate(jd_DataBankConfig* config);
-jd_ExportFn jd_DataNode*  jd_DataBankAddRecord(jd_DataNode* parent, jd_String key);
-jd_ExportFn jd_DataNode*  jd_DataPointAdd(jd_DataNode* parent, jd_String key, jd_Value value);
-jd_ExportFn jd_Value      jd_DataPointGetValue(jd_DataNode* record, jd_String key);
+jd_ExportFn jd_DFile*     jd_DataBankSerialize(jd_DataBank* bank);
+jd_ExportFn jd_DataBank*  jd_DataBankDeserialize(jd_File view);
+
+jd_ExportFn jd_ForceInline jd_DataNode* jd_DataBankGetRoot(jd_DataBank* bank);
+
+jd_ExportFn jd_DataNode*   jd_DataBankAddRecord(jd_DataNode* parent, jd_String key, jd_DataNodeOptions* options);
+jd_ExportFn jd_DataNode*   jd_DataBankAddRecordWithPK(jd_DataNode* parent, jd_String key, u64 primary_key, jd_DataNodeOptions* options);
+jd_ExportFn jd_DataNode*   jd_DataPointAdd(jd_DataNode* parent, jd_String key, jd_Value value, jd_DataNodeOptions* options);
+jd_ExportFn jd_Value       jd_DataPointGetValue(jd_DataNode* record, jd_String key);
 
 jd_ExportFn jd_ForceInline jd_Value jd_ValueCastString(jd_String string);
 jd_ExportFn jd_ForceInline jd_Value jd_ValueCastBin(jd_View view);
@@ -98,21 +114,19 @@ jd_ExportFn jd_ForceInline jd_Value jd_ValueCastI32(i32 val);
 jd_ExportFn jd_ForceInline jd_Value jd_ValueCastF32(f32 val);
 jd_ExportFn jd_ForceInline jd_Value jd_ValueCastF64(f64 val);
 
-jd_ExportFn jd_ForceInline jd_String jd_ValueAsString(jd_Value v);
-jd_ExportFn jd_ForceInline jd_View   jd_ValueAsBin(jd_Value v);
-jd_ExportFn jd_ForceInline u64       jd_ValueAsU64(jd_Value v);
-jd_ExportFn jd_ForceInline u32       jd_ValueAsU32(jd_Value v);
-jd_ExportFn jd_ForceInline b32       jd_ValueAsB32(jd_Value v);
-jd_ExportFn jd_ForceInline c8        jd_ValueAsC8(jd_Value v);
-jd_ExportFn jd_ForceInline i64       jd_ValueAsI64(jd_Value v);
-jd_ExportFn jd_ForceInline i32       jd_ValueAsI32(jd_Value v);
-jd_ExportFn jd_ForceInline f32       jd_ValueAsF32(jd_Value v);
-jd_ExportFn jd_ForceInline f64       jd_ValueAsF64(jd_Value v);
+jd_ExportFn jd_ForceInline jd_String jd_ValueString(jd_Value v);
+jd_ExportFn jd_ForceInline jd_View   jd_ValueBin(jd_Value v);
+jd_ExportFn jd_ForceInline u64       jd_ValueU64(jd_Value v);
+jd_ExportFn jd_ForceInline u32       jd_ValueU32(jd_Value v);
+jd_ExportFn jd_ForceInline b32       jd_ValueB32(jd_Value v);
+jd_ExportFn jd_ForceInline c8        jd_ValueC8 (jd_Value v);
+jd_ExportFn jd_ForceInline i64       jd_ValueI64(jd_Value v);
+jd_ExportFn jd_ForceInline i32       jd_ValueI32(jd_Value v);
+jd_ExportFn jd_ForceInline f32       jd_ValueF32(jd_Value v);
+jd_ExportFn jd_ForceInline f64       jd_ValueF64(jd_Value v);
 
 #ifdef JD_IMPLEMENTATION
-#ifdef JD_WINDOWS
 #include "jd_databank.c"
-#endif
 #endif
 
 

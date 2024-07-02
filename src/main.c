@@ -2,8 +2,6 @@
 #define JD_DEBUG
 #define JD_IMPLEMENTATION
 #include "dep/jd_lib2/jd_unity.h"
-#include <stdio.h>
-#include <stdlib.h>
 
 jd_AppMainFn {
     jd_DebugPrintSysInfo();
@@ -11,18 +9,35 @@ jd_AppMainFn {
     
     jd_DataBankConfig cfg = {0};
     jd_DataBank* db = jd_DataBankCreate(&cfg);
-    jd_DataNode* employees = jd_DataBankAddRecord(db->root, jd_StrLit("employees"));
-    jd_DataBankAddRecord(db->root, jd_StrLit("projects"));
-    jd_DataBankAddRecord(db->root, jd_StrLit("owners"));
-    jd_DataBankAddRecord(db->root, jd_StrLit("documents"));
     
-    jd_DataNode* employee = jd_DataBankAddRecord(employees, jd_StrLit("employee"));
+    jd_DataNodeOptions options = {0};
     
+    options.display = jd_StrLit("Employees");
+    jd_DataNode* employees = jd_DataBankAddRecord(db->root, jd_StrLit("employees"), &options);
+    
+    options.display = jd_StrLit("Projects");
+    jd_DataBankAddRecord(db->root, jd_StrLit("projects"), &options);
+    
+    options.display = jd_StrLit("Owners");
+    jd_DataBankAddRecord(db->root, jd_StrLit("owners"), &options);
+    
+    options.display = jd_StrLit("Documents");
+    jd_DataBankAddRecord(db->root, jd_StrLit("documents"), &options);
+    
+    options.display = jd_StrLit("Employee");
+    jd_DataNode* employee = jd_DataBankAddRecord(employees, jd_StrLit("employee"), &options);
+    
+    options.display = jd_StrLit("Name");
     jd_Value name_value = jd_ValueCastString(jd_StrLit("Abe Simpson"));
-    jd_Value years_exp_value = jd_ValueCastU64(5);
+    jd_DataPointAdd(employee, jd_StrLit("name"), name_value, &options);
     
-    jd_DataPointAdd(employee, jd_StrLit("name"), name_value);
-    jd_DataPointAdd(employee, jd_StrLit("years_exp"), years_exp_value);
+    options.display = jd_StrLit("Years of Experience");
+    jd_Value years_exp_value = jd_ValueCastU64(5);
+    jd_DataPointAdd(employee, jd_StrLit("years_exp"), years_exp_value, &options);
+    
+    
+    jd_DFile* file = jd_DataBankSerialize(db);
+    jd_DataBank* ds = jd_DataBankDeserialize(jd_DFileGet(file));
     
     jd_App* app = jd_AppCreate(&(jd_AppConfig){JD_AM_RELOADABLE, jd_StrLit("jd_app_test")});
     

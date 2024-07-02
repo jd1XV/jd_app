@@ -17,7 +17,7 @@ typedef struct jd_DString {
 } jd_DString;
 
 jd_ExportFn jd_String jd_StrLit(c8* c_str);
-#define   jd_StrConst(c_str) {c_str, sizeof(c_str) - 1}
+#define jd_StrConst(c_str) {c_str, sizeof(c_str) - 1}
 jd_ExportFn jd_String jd_StringPush(jd_Arena* arena, jd_String str);
 jd_ExportFn jd_String jd_StringPushF(jd_Arena* arena, jd_String fmt_string, ...);
 
@@ -40,6 +40,7 @@ jd_ExportFn void jd_DStringAppendU32(jd_DString* d_string, u32 num, u32 radix);
 jd_ExportFn void jd_DStringAppendI32(jd_DString* d_string, i32 num, u32 radix);
 jd_ExportFn void jd_DStringAppendU64(jd_DString* d_string, u64 num, u32 radix);
 jd_ExportFn void jd_DStringAppendI64(jd_DString* d_string, i64 num, u32 radix);
+jd_ExportFn void jd_DStringAppendBin(jd_DString* d_string, u64 size, void* ptr);
 
 #ifdef JD_IMPLEMENTATION
 #include "jd_string.c"

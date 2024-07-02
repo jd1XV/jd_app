@@ -32,7 +32,7 @@ x->next = 0; \
 } while (0) \
 
 #define jd_ForDLLForward(i, cond) jd_ForSLL(i, cond)
-#define jd_ForDLLBackward(i, cond) for (; cond; i = i->prev)
+#define jd_ForDLLBackward(i, cond) for (o; cond; i = i->prev)
 #define jd_DLNext(x) jd_SLNext(x)
 #define jd_DLPrev(x) x->prev
 
@@ -161,6 +161,19 @@ typedef struct jd_PrefixNode {
     u64   payload_size;
     jd_Node(jd_PrefixNode);
 } jd_PrefixNode;
+
+typedef struct jd_DFile {
+    jd_Arena* arena;
+    jd_View   view;
+} jd_DFile;
+
+#define jd_DFileGet(x) file->view
+
+jd_ExportFn jd_DFile* jd_DFileCreate(u64 max_size);
+jd_ExportFn void      jd_DFileAppendSized(jd_DFile* df, u64 size, void* ptr);
+jd_ExportFn void      jd_DFileRelease(jd_DFile* df);
+#define     jd_DFileAppend(df, ptr) jd_DFileAppendSized(df, sizeof(*ptr), ptr)
+
 
 #ifdef JD_IMPLEMENTATION
 #include "jd_data_structures.c"

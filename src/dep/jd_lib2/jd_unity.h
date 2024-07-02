@@ -54,7 +54,7 @@
 #endif
 
 #include "jd_string.c"
-//#include "jd_file.c"
+#include "jd_file.c"
 #include "jd_error.c"
 #include "jd_unicode.c"
 #include "jd_data_structures.c"

@@ -9,8 +9,6 @@
 #include <shobjidl_core.h>
 #include <intrin.h>
 #include <shlwapi.h>
-#include <strsafe.h>
-#include <dwmapi.h>
 #include <vsstyle.h>
 #include <uxtheme.h>
 
