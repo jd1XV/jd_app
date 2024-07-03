@@ -12,32 +12,61 @@ jd_AppMainFn {
     
     jd_DataNodeOptions options = {0};
     
-    options.display = jd_StrLit("Employees");
-    jd_DataNode* employees = jd_DataBankAddRecord(db->root, jd_StrLit("employees"), &options);
+    jd_DataNode* employees = jd_DataBankAddRecord(db->root, jd_StrLit("employees"));
+    jd_DataNode* projects  = jd_DataBankAddRecord(db->root, jd_StrLit("projects"));
+    jd_DataNode* owners    = jd_DataBankAddRecord(db->root, jd_StrLit("owners"));
+    jd_DataNode* documents = jd_DataBankAddRecord(db->root, jd_StrLit("documents"));
     
-    options.display = jd_StrLit("Projects");
-    jd_DataBankAddRecord(db->root, jd_StrLit("projects"), &options);
+    for (u64 i = 0; i < KILOBYTES(32); i++) {
+        jd_DataNode* employee = jd_DataBankAddRecord(employees, jd_StrLit("employee"));
+        
+        jd_Value name_value = jd_ValueCastString(jd_StrLit("Abe Simpson"));
+        jd_DataPointAdd(employee, jd_StrLit("name"), name_value);
+        
+        jd_Value years_exp_value = jd_ValueCastU64(5);
+        jd_DataPointAdd(employee, jd_StrLit("years_exp"), years_exp_value);
+        
+        jd_Value title_v = jd_ValueCastString(jd_StrLit("Mechanical Engineer"));
+        jd_DataPointAdd(employee, jd_StrLit("title"), title_v);
+        
+        jd_Value years_exp_hh = jd_ValueCastU64(4);
+        jd_DataPointAdd(employee, jd_StrLit("years_exp_hh"), years_exp_hh);
+        
+        jd_Value specialty = jd_ValueCastString(jd_StrLit("Mechanical Engineer"));
+        jd_DataPointAdd(employee, jd_StrLit("speciality"), specialty);
+    }
     
-    options.display = jd_StrLit("Owners");
-    jd_DataBankAddRecord(db->root, jd_StrLit("owners"), &options);
+    for (u64 i = 0; i < KILOBYTES(32); i++) {
+        jd_DataNode* project = jd_DataBankAddRecord(projects, jd_StrLit("employee"));
+        
+        jd_Value name_value = jd_ValueCastString(jd_StrLit("Abe Simpson"));
+        jd_DataPointAdd(project, jd_StrLit("name"), name_value);
+        
+        jd_Value years_exp_value = jd_ValueCastU64(5);
+        jd_DataPointAdd(project, jd_StrLit("years_exp"), years_exp_value);
+        
+        jd_Value title_v = jd_ValueCastString(jd_StrLit("Mechanical Engineer"));
+        jd_DataPointAdd(project, jd_StrLit("title"), title_v);
+        
+        jd_Value years_exp_hh = jd_ValueCastU64(4);
+        jd_DataPointAdd(project, jd_StrLit("years_exp_hh"), years_exp_hh);
+        
+        jd_Value specialty = jd_ValueCastString(jd_StrLit("Mechanical Engineer"));
+        jd_DataPointAdd(project, jd_StrLit("speciality"), specialty);
+    }
     
-    options.display = jd_StrLit("Documents");
-    jd_DataBankAddRecord(db->root, jd_StrLit("documents"), &options);
+    jd_Timer t = {0};
+    jd_DFile* out = 0;
+    jd_FunctionTimer(out = jd_DataBankSerialize(db), t);
     
-    options.display = jd_StrLit("Employee");
-    jd_DataNode* employee = jd_DataBankAddRecord(employees, jd_StrLit("employee"), &options);
+    jd_DString* report = jd_DStringCreate(2048);
+    jd_DStringAppendF(report, jd_StrLit("Serialize time: %f | "), t.stop);
+    jd_DStringAppendF(report, jd_StrLit("File Size: %llu \n"), out->view.size);
     
-    options.display = jd_StrLit("Name");
-    jd_Value name_value = jd_ValueCastString(jd_StrLit("Abe Simpson"));
-    jd_DataPointAdd(employee, jd_StrLit("name"), name_value, &options);
+    jd_DebugPrint(jd_DStringGet(report));
     
-    options.display = jd_StrLit("Years of Experience");
-    jd_Value years_exp_value = jd_ValueCastU64(5);
-    jd_DataPointAdd(employee, jd_StrLit("years_exp"), years_exp_value, &options);
+    jd_DebugBreak();
     
-    
-    jd_DFile* file = jd_DataBankSerialize(db);
-    jd_DataBank* ds = jd_DataBankDeserialize(jd_DFileGet(file));
     
     jd_App* app = jd_AppCreate(&(jd_AppConfig){JD_AM_RELOADABLE, jd_StrLit("jd_app_test")});
     

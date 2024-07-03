@@ -98,7 +98,8 @@ void jd_DStringAppendF(jd_DString* d_string, jd_String app_fmt, ...) {
     va_list list = {0};
     va_start(list, app_fmt);
     jd_String str = jd_StringPushVAList(d_string->arena, app_fmt, list);
-    d_string->count += str.count;
+    d_string->count += (str.count - 1);
+    d_string->arena->pos -= 1;  // little hack to cancel out stb_vsnprintf 0-termination
     va_end(list);
 }
 

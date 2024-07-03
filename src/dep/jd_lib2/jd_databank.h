@@ -98,9 +98,9 @@ jd_ExportFn jd_DataBank*  jd_DataBankDeserialize(jd_File view);
 
 jd_ExportFn jd_ForceInline jd_DataNode* jd_DataBankGetRoot(jd_DataBank* bank);
 
-jd_ExportFn jd_DataNode*   jd_DataBankAddRecord(jd_DataNode* parent, jd_String key, jd_DataNodeOptions* options);
-jd_ExportFn jd_DataNode*   jd_DataBankAddRecordWithPK(jd_DataNode* parent, jd_String key, u64 primary_key, jd_DataNodeOptions* options);
-jd_ExportFn jd_DataNode*   jd_DataPointAdd(jd_DataNode* parent, jd_String key, jd_Value value, jd_DataNodeOptions* options);
+jd_ExportFn jd_DataNode*   jd_DataBankAddRecord(jd_DataNode* parent, jd_String key);
+jd_ExportFn jd_DataNode*   jd_DataBankAddRecordWithPK(jd_DataNode* parent, jd_String key, u64 primary_key);
+jd_ExportFn jd_DataNode*   jd_DataPointAdd(jd_DataNode* parent, jd_String key, jd_Value value);
 jd_ExportFn jd_Value       jd_DataPointGetValue(jd_DataNode* record, jd_String key);
 
 jd_ExportFn jd_ForceInline jd_Value jd_ValueCastString(jd_String string);
