@@ -32,6 +32,7 @@ typedef struct jd_App {
     jd_String lib_file_name;
     jd_String lib_copied_file_name;
     u64 reloadable_dll_file_time;
+    
     HGLRC ogl_context;
     
     PIXELFORMATDESCRIPTOR pixel_format_descriptor;

@@ -78,6 +78,7 @@ typedef struct jd_PlatformWindowConfig {
     jd_String id_str;
     jd_AppWindowFunctionPtr function_ptr;
     jd_String function_name;
+    
     jd_TitleBarStyle titlebar_style;
     jd_TitleBarFunctionPtr titlebar_function_ptr;
 } jd_PlatformWindowConfig;

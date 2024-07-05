@@ -381,7 +381,7 @@ jd_DataBank* jd_DataBankDeserialize(jd_File file) {
     jd_DataBankConfig cfg = {
         .disabled_types = disabled_types,
         .primary_key_hash_table_slot_count = hash_table_slot_count,
-        .primary_key_index = pk_index
+        .primary_key_index = pk_index,
     };
     
     jd_DataBank* bank = jd_DataBankCreate(&cfg);

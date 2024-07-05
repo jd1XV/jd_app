@@ -85,6 +85,7 @@ typedef struct jd_DataBank {
 } jd_DataBank;
 
 typedef struct jd_DataBankConfig {
+    jd_Arena* arena;
     jd_String name;
     jd_DataType disabled_types; // |= types to this flag to disable them
     u64 total_memory_cap;
@@ -102,6 +103,8 @@ jd_ExportFn jd_DataNode*   jd_DataBankAddRecord(jd_DataNode* parent, jd_String k
 jd_ExportFn jd_DataNode*   jd_DataBankAddRecordWithPK(jd_DataNode* parent, jd_String key, u64 primary_key);
 jd_ExportFn jd_DataNode*   jd_DataPointAdd(jd_DataNode* parent, jd_String key, jd_Value value);
 jd_ExportFn jd_Value       jd_DataPointGetValue(jd_DataNode* record, jd_String key);
+jd_ExportFn jd_DataNode*   jd_DataBankGetRecordWithID(jd_DataBank* bank, u64 primary_key);
+jd_ExportFn jd_DataNode*   jd_DataBankCopySubtree(jd_Arena arena, jd_DataNode* subtree_root);
 
 jd_ExportFn jd_ForceInline jd_Value jd_ValueCastString(jd_String string);
 jd_ExportFn jd_ForceInline jd_Value jd_ValueCastBin(jd_View view);

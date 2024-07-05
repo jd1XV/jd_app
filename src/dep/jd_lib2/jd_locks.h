@@ -23,6 +23,7 @@ typedef enum jd_RWLockMode {
 
 typedef struct jd_RWLock  jd_RWLock;
 jd_ForceInline jd_RWLock* jd_RWLockCreate(jd_Arena* arena);
+jd_ForceInline jd_RWLock* jd_RWLockCreateHeap();
 jd_ForceInline void       jd_RWLockInitialize(jd_RWLock* lock);
 jd_ForceInline void       jd_RWLockGet(jd_RWLock* lock, jd_RWLockMode mode);
 jd_ForceInline b32        jd_RWLockTryGet(jd_RWLock* lock, jd_RWLockMode mode);

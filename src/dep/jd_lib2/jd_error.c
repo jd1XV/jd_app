@@ -83,5 +83,3 @@ b32 jd_ErrorLogInit(jd_String serialized_file_path, u64 max_errors) {
     _jd_internal_error_log->output_string = jd_DStringCreate(_jd_internal_error_log->capacity * 256);
     return true;
 }
-
-

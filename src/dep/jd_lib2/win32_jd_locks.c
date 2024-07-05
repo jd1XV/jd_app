@@ -43,6 +43,12 @@ jd_ForceInline void jd_RWLockInitialize(jd_RWLock* lock) {
     InitializeSRWLock(&lock->srw);
 }
 
+jd_ForceInline jd_RWLock* jd_RWLockCreateHeap() {
+    jd_RWLock* lock = jd_HeapAlloc(sizeof(*lock));
+    InitializeSRWLock(&lock->srw);
+    return lock;
+}
+
 jd_ForceInline void jd_RWLockGet(jd_RWLock* lock, jd_RWLockMode mode) {
     switch (mode) {
         case jd_RWLock_Read: {
