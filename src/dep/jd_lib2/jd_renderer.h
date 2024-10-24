@@ -98,6 +98,13 @@ typedef struct jd_Font {
     jd_Renderer* renderer;
 } jd_Font;
 
+typedef enum jd_TypeLayout {
+    jd_TypeLayout_LeftAlign,
+    jd_TypeLayout_RightAlign,
+    jd_TypeLayout_Centered,
+    jd_TypeLayout_Count
+} jd_TypeLayout;
+
 typedef struct jd_GLVertex {
     jd_V3F pos;
     jd_V3F tx;
@@ -146,6 +153,7 @@ jd_ExportFn jd_Renderer* jd_RendererGet();
 void jd_RendererInit();
 jd_ExportFn void jd_RendererBegin(jd_V2F render_size);
 jd_ExportFn void jd_DrawString(jd_String font_id, jd_String str, jd_V2F window_pos, jd_TextOrigin baseline, jd_V4F color, f32 wrap_width);
+jd_ExportFn void jd_CalcStringBoxUTF8(jd_String font_id, jd_String str, f32 wrap_width);
 jd_ExportFn void jd_DrawStringWithBG(jd_String font_id, jd_String str, jd_V2F window_pos, jd_TextOrigin baseline, jd_V4F text_color, jd_V4F bg_color, f32 wrap_width);
 jd_ExportFn void jd_DrawRect(jd_V2F window_pos, jd_V2F size, jd_V4F col);
 jd_ExportFn void jd_RendererSetDPIScale(jd_Renderer* renderer, f32 scale);

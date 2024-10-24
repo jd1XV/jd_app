@@ -51,6 +51,8 @@ typedef struct jd_V2F {
     
 } jd_V2F;
 
+#define jd_V2F(x, y) (jd_V2F){x, y}
+
 typedef struct jd_V3F {
     union {
         struct {
@@ -66,6 +68,8 @@ typedef struct jd_V3F {
     };
     
 } jd_V3F;
+
+#define jd_V3F(x, y, z) (jd_V3F){x, y, z}
 
 typedef struct jd_V4F {
     union {
@@ -89,6 +93,8 @@ typedef struct jd_V4F {
         };
     };
 } jd_V4F;
+
+#define jd_V4F(x, y, z, w) (jd_V4F){x, y, z, w}
 
 #define jd_V4FAddRGB(a, b) {a.x + b.x, a.y + b.y, a.w + b.w, a.h}
 #define jd_V4FSubRGB(a, b) {a.x - b.x, a.y - b.y, a.w - b.w, a.h}

@@ -16,6 +16,11 @@ typedef struct jd_Arena {
     u64 _commit_page_size;
 } jd_Arena;
 
+typedef struct jd_ScratchArena {
+    jd_Arena* arena;
+    u64 pos;
+} jd_ScratchArena;
+
 jd_ExportFn void*     jd_HeapAlloc(u64 size);
 
 jd_ExportFn jd_Arena* jd_ArenaCreate(u64 reserve, u64 commit_block_size);
@@ -24,6 +29,9 @@ jd_ExportFn jd_View   jd_ArenaAllocView(jd_Arena* arena, u64 size);
 jd_ExportFn void      jd_ArenaPopTo(jd_Arena* arena, u64 pos);
 jd_ExportFn void      jd_ArenaPopBlock(jd_Arena* arena, void* start, u64 size);
 jd_ExportFn void      jd_ArenaRelease(jd_Arena* arena);
+
+jd_ExportFn jd_ScratchArena jd_ScratchArenaCreate(jd_Arena* arena);
+jd_ExportFn void            jd_ScratchArenaRelease(jd_ScratchArena scratch);
 
 jd_ExportFn void jd_ZeroMemory(void* dest, u64 size);
 jd_ExportFn void jd_MemCpy(void* dest, const void* src, u64 size);

@@ -93,15 +93,40 @@ typedef struct jd_DataBankConfig {
     u64 primary_key_index;
 } jd_DataBankConfig;
 
+typedef enum jd_DataFilterRule {
+    jd_FilterRule_None,
+    jd_FilterRule_GreaterThan,
+    jd_FilterRule_LessThan,
+    jd_FilterRule_GreaterThanOrEq,
+    jd_FilterRule_LessThanOrEq,
+    jd_FilterRule_Equals, 
+    jd_FilterRule_DoesNotEqual,
+    jd_FilterRule_Contains,
+    jd_FilterRule_DoesNotContain,
+    jd_FilterRule_Count
+} jd_DataFilterRule;
+
+typedef struct jd_DataFilter {
+    jd_String key;
+    jd_Value  value;
+    jd_DataFilterRule rule;
+    jd_Node(jd_DataFilter);
+} jd_DataFilter;
+
+jd_ExportFn jd_DataFilter* jd_DataFilterCreate(jd_Arena* arena, jd_String key);
+jd_ExportFn jd_DataFilter* jd_DataFilterPush(jd_Arena* arena, jd_DataFilter* parent, jd_String key, jd_Value value, jd_DataFilterRule rule);
+jd_ExportFn b32                 jd_DataFilterEvaluate(jd_DataFilter* filter, jd_DataNode* n, b32 case_sensitive);
+
 jd_ExportFn jd_DataBank*  jd_DataBankCreate(jd_DataBankConfig* config);
 jd_ExportFn jd_DFile*     jd_DataBankSerialize(jd_DataBank* bank);
 jd_ExportFn jd_DataBank*  jd_DataBankDeserialize(jd_File view);
 
-jd_ExportFn jd_ForceInline jd_DataNode* jd_DataBankGetRoot(jd_DataBank* bank);
+jd_ExportFn jd_DataNode*   jd_DataBankGetRoot(jd_DataBank* bank);
 
 jd_ExportFn jd_DataNode*   jd_DataBankAddRecord(jd_DataNode* parent, jd_String key);
 jd_ExportFn jd_DataNode*   jd_DataBankAddRecordWithPK(jd_DataNode* parent, jd_String key, u64 primary_key);
-jd_ExportFn jd_DataNode*   jd_DataPointAdd(jd_DataNode* parent, jd_String key, jd_Value value);
+jd_ExportFn jd_DataNode*   jd_DataPointSet(jd_DataNode* record, jd_String key, jd_Value value);
+jd_ExportFn jd_DataNode*   jd_DataPointGet(jd_DataNode* record, jd_String key);
 jd_ExportFn jd_Value       jd_DataPointGetValue(jd_DataNode* record, jd_String key);
 jd_ExportFn jd_DataNode*   jd_DataBankGetRecordWithID(jd_DataBank* bank, u64 primary_key);
 jd_ExportFn jd_DataNode*   jd_DataBankCopySubtree(jd_Arena arena, jd_DataNode* subtree_root);

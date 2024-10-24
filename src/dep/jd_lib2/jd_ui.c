@@ -176,13 +176,20 @@ void jd_UIPickActiveBox(jd_UIViewport* vp) {
     }
 }
 
-void jd_UIPushFont(jd_String font_id) {
+void jd_UIFontPush(jd_String font_id) {
     jd_DArrayPushBack(_jd_internal_ui_state.font_id_stack, &font_id);
 }
 
 void jd_UIPopFont() {
     jd_DArrayPopBack(_jd_internal_ui_state.font_id_stack);
 }
+
+/*
+
+
+
+*/
+
 
 jd_UIResult jd_UIBox(jd_UIBoxConfig* config) {
     jd_UIViewport* vp = jd_UIViewportGetCurrent();
@@ -198,6 +205,8 @@ jd_UIResult jd_UIBox(jd_UIBoxConfig* config) {
     }
     
     b8 act_on_click = config->act_on_click;
+    b8 clickable    = config->clickable;
+    b8 use_padding  = config->use_padding;
     
     jd_UITag tag = jd_UITagFromString(config->string_id);
     jd_UIBoxRec* b = jd_UIBoxGetByTag(tag);
@@ -226,7 +235,7 @@ jd_UIResult jd_UIBox(jd_UIBoxConfig* config) {
                     jd_LogError("Incorrect input slice range!", jd_Error_APIMisuse, jd_Error_Fatal);
                 }
                 
-                if (act_on_click) {
+                if (act_on_click && clickable) {
                     switch (e->key) {
                         case jd_MB_Left:
                         case jd_MB_Right:
@@ -255,21 +264,24 @@ jd_UIResult jd_UIBox(jd_UIBoxConfig* config) {
                 if (!e) { // Sanity Check
                     jd_LogError("Incorrect input slice range!", jd_Error_APIMisuse, jd_Error_Fatal);
                 }
-                
-                switch (e->key) {
-                    case jd_MB_Left:
-                    case jd_MB_Right:
-                    case jd_MB_Middle: {
-                        if (!act_on_click) {
-                            if (e->release_event && vp->hot == b) {
-                                result.control_clicked = jd_InputHasMod(e, jd_KeyMod_Ctrl);
-                                result.alt_clicked     = jd_InputHasMod(e, jd_KeyMod_Alt);
-                                result.shift_clicked   = jd_InputHasMod(e, jd_KeyMod_Shift);
-                                result.l_clicked       = (e->key == jd_MB_Left);
-                                result.m_clicked       = (e->key == jd_MB_Middle);
-                                result.r_clicked       = (e->key == jd_MB_Right);
-                                break;
+                if (clickable) {
+                    switch (e->key) {
+                        
+                        case jd_MB_Left:
+                        case jd_MB_Right:
+                        case jd_MB_Middle: {
+                            if (!act_on_click) {
+                                if (e->release_event && vp->hot == b) {
+                                    result.control_clicked = jd_InputHasMod(e, jd_KeyMod_Ctrl);
+                                    result.alt_clicked     = jd_InputHasMod(e, jd_KeyMod_Alt);
+                                    result.shift_clicked   = jd_InputHasMod(e, jd_KeyMod_Shift);
+                                    result.l_clicked       = (e->key == jd_MB_Left);
+                                    result.m_clicked       = (e->key == jd_MB_Middle);
+                                    result.r_clicked       = (e->key == jd_MB_Right);
+                                    break;
+                                }
                             }
+                            
                         }
                         
                     }
@@ -291,8 +303,9 @@ jd_UIResult jd_UIBox(jd_UIBoxConfig* config) {
         jd_V2F string_pos = rect_pos;
         
         f32 style_scaling = jd_PlatformWindowGetDPIScale(vp->window);
-        string_pos.x += style->padding.x * style_scaling;
-        string_pos.y += style->padding.y * style_scaling;
+        jd_V2F string_size = jd_CalcStringSizeUTF8(*font_id, config->label, 0.0f);
+        string_pos.x += ((rect_size.x - string_size.x) * config->label_alignment.x);
+        string_pos.y += ((rect_size.y - string_size.y) * config->label_alignment.y);
         jd_DrawString(*font_id, config->label, string_pos, jd_TextOrigin_TopLeft, style->label_color, 0.0f);
     }
     

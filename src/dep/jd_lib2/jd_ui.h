@@ -13,27 +13,27 @@ typedef struct jd_UITag {
 } jd_UITag;
 
 typedef struct jd_UIStyle {
-    jd_String     id;
-    jd_V2F        label_anchor;
-    jd_V4F        label_color;
-    jd_V4F        color_bg;
-    jd_V4F        color_border;
-    jd_V4F        color_label;
-    jd_V4F        color_button;
-    jd_V4F        color_menu;
-    jd_V4F        color_hover_mod;
-    jd_V4F        color_active_mod;
-    jd_V2F        padding;
-    f32           corner_radius;
-    f32           border;
+    jd_String id;
+    jd_V2F    label_anchor;
+    jd_V4F    label_color;
+    jd_V4F    color_bg;
+    jd_V4F    color_border;
+    jd_V4F    color_label;
+    jd_V4F    color_button;
+    jd_V4F    color_menu;
+    jd_V4F    color_hover_mod;
+    jd_V4F    color_active_mod;
+    jd_V2F    padding;
+    f32       corner_radius;
+    f32       border;
 } jd_UIStyle;
 
 typedef struct jd_UIBoxRec {
-    jd_UITag  tag;
+    jd_UITag   tag;
     jd_RectF32 rect;
-    jd_V2F    pos; // platform window space
-    jd_V2F    label_anchor;
-    jd_String label;
+    jd_V2F     pos; // platform window space
+    jd_V2F     label_anchor;
+    jd_String  label;
     
     struct jd_UIBoxRec* next_with_same_hash;
     
@@ -88,9 +88,12 @@ typedef struct jd_UIBoxConfig {
     jd_UIBoxRec*  parent;
     jd_UIStyle*   style;
     jd_String     label;
+    jd_V2F        label_alignment;
     jd_String     string_id;
     jd_RectF32    rect;
     
+    b8            clickable;
+    b8            use_padding;
     b8            act_on_click;
     b8            static_color;
     b8            disabled;
@@ -102,13 +105,15 @@ typedef struct jd_UIBoxConfig {
     // flags, we can have skinning by default.
 } jd_UIBoxConfig;
 
+typedef jd_UIBoxConfig jd_UIButtonConfig;
+
 jd_ExportFn jd_UIResult jd_UIBox(jd_UIBoxConfig* cfg);
 jd_ExportFn jd_UIViewport* jd_UIBeginViewport(jd_PlatformWindow* window);
 jd_ExportFn jd_ForceInline void jd_UISeedPushPtr(void* ptr);
 jd_ExportFn jd_ForceInline void jd_UISeedPop();
 jd_ExportFn jd_ForceInline void jd_UIStylePush(jd_UIStyle* style);
 jd_ExportFn jd_ForceInline void jd_UIStylePop();
-jd_ExportFn jd_ForceInline void jd_UIPushFont(jd_String font_id);
+jd_ExportFn jd_ForceInline void jd_UIFontPush(jd_String font_id);
 jd_ExportFn jd_ForceInline void jd_UIPopFont();
 
 static jd_UIStyle jd_default_style_dark = {
@@ -120,9 +125,9 @@ static jd_UIStyle jd_default_style_dark = {
     .color_label = {.95f, .95f, .92f, 1.0f},
     .color_button = {.10f, .10f, .08f, 1.0f},
     .color_menu = {.09f, .09f, .06f, 1.0f},
-    .color_hover_mod = {1.10f, 1.10f, 1.10f, 1.0f},
-    .color_active_mod = {.90f, .90f, .90f, 1.0f},
-    .padding = {6.0f, 6.0f},
+    .color_hover_mod = {1.30, 1.30f, 1.30f, 1.30f},
+    .color_active_mod = {.80f, .80f, .80f, 1.0f},
+    .padding = {8.0f, 8.f},
     .corner_radius = 0.0f,
     .border = 3.0f
 };

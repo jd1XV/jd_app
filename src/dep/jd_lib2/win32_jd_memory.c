@@ -99,6 +99,27 @@ void jd_ArenaRelease(jd_Arena* arena) {
     VirtualFree(arena, 0, MEM_RELEASE);
 }
 
+jd_ScratchArena jd_ScratchArenaCreate(jd_Arena* arena) {
+    if (!arena) {
+        jd_LogError("Cannot create sratch arena on null arena.", jd_Error_APIMisuse, jd_Error_Fatal);
+    }
+    
+    jd_ScratchArena scratch = {
+        .arena = arena,
+        .pos = arena->pos
+    };
+    
+    return scratch;
+}
+
+void jd_ScratchArenaRelease(jd_ScratchArena scratch) {
+    if (!scratch.arena || scratch.arena->pos < scratch.pos) {
+        jd_LogError("Arena has been modified since the creation of the scratch. Ensure you're not sharing this arena between threads.", jd_Error_APIMisuse, jd_Error_Fatal);
+    }
+    
+    jd_ArenaPopTo(scratch.arena, scratch.pos);
+}
+
 void jd_MemSet(void* dest, const u8 val, u64 size) {
     jd_CPUFlags flags = jd_SysInfoGetCPUFlags();
     u64 index = 0;

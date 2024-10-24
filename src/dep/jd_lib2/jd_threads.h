@@ -16,12 +16,14 @@ typedef enum jd_ThreadState {
 } jd_ThreadState;
 
 typedef struct jd_Thread jd_Thread;
+typedef struct jd_ThreadPool jd_ThreadPool;
 
 typedef void (*jd_ThreadFunctionPtr)(void* param);
 #define jd_ThreadFunction(x) void x (void* param)
 
 jd_Thread* jd_ThreadCreate(jd_Arena* arena, jd_ThreadFunctionPtr* ptr, void* param, u64 param_size);
 void       jd_ThreadClose(jd_Thread* thread, u32 code);
+
 
 #ifdef JD_IMPLEMENTATION
 #ifdef JD_WINDOWS

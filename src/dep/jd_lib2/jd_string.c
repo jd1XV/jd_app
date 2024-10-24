@@ -56,7 +56,7 @@ jd_String jd_StringGetPrefix(jd_String str, jd_String pattern) {
     return s;
 }
 
-jd_ForceInline jd_String jd_StringGetPostfix(jd_String str, jd_String pattern) {
+jd_String jd_StringGetPostfix(jd_String str, jd_String pattern) {
     jd_String s = str;
     for (u64 i = 0; i + pattern.count < str.count; i++) {
         if (jd_MemCmp(&str.mem[i], pattern.mem, pattern.count)) {
@@ -72,6 +72,21 @@ jd_ForceInline jd_String jd_StringGetPostfix(jd_String str, jd_String pattern) {
 b32 jd_StringMatch(jd_String a, jd_String b) {
     if (a.count != b.count) return false;
     return jd_MemCmp(a.mem, b.mem, a.count);
+}
+
+b32 jd_StringContainsSubstring(jd_String string, jd_String substring) {
+    if (substring.count > string.count) return false;
+    
+    for (u64 i = 0; i < string.count; i++) {
+        if (i + substring.count > string.count) {
+            return false;
+        }
+        
+        b32 cmp = jd_MemCmp(string.mem + i, substring.mem, substring.count);
+        if (cmp) return true;
+    }
+    
+    return false;
 }
 
 jd_ForceInline jd_DString* jd_DStringCreate(u64 capacity) {

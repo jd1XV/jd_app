@@ -432,8 +432,8 @@ b32 jd_Internal_DrawGlyph(jd_Font* font, jd_V2F window_pos, jd_V4F col, jd_Glyph
     jd_RectF32 rect = {0};
     rect.min.x = x + g->offset.x * dpi_scaling;
     rect.min.y = y + g->offset.y * dpi_scaling;
-    rect.max.x = rect.min.x + g->size.x * dpi_scaling;
-    rect.max.y = rect.min.y + g->size.y * dpi_scaling;
+    rect.max.x = rect.min.x + (g->size.x * dpi_scaling);
+    rect.max.y = rect.min.y + (g->size.y * dpi_scaling);
     
     if (rect.max.x < 0.0f || rect.max.y < 0.0f) {
         return true;
@@ -487,6 +487,8 @@ b32 jd_Internal_DrawGlyph(jd_Font* font, jd_V2F window_pos, jd_V4F col, jd_Glyph
     
     return true;
 }
+
+
 
 jd_V2F jd_CalcStringBoxMax(jd_String font_id, jd_V2F starting_pos, jd_UTFDecodedString utf32_string, f32 wrap_width) {
     jd_Renderer* renderer = jd_RendererGet();
@@ -564,17 +566,129 @@ jd_V2F jd_CalcStringBoxMax(jd_String font_id, jd_V2F starting_pos, jd_UTFDecoded
     return max;
 }
 
+jd_V2F jd_CalcStringBoxMaxUTF8(jd_String font_id, jd_String str, f32 wrap_width) {
+    jd_Renderer* renderer = jd_RendererGet();
+    jd_ScratchArena scratch = jd_ScratchArenaCreate(renderer->frame_arena);
+    jd_UTFDecodedString utf32 = jd_UnicodeDecodeUTF8String(scratch.arena, jd_UnicodeTF_UTF32, str, false);
+    jd_V2F bm = jd_CalcStringBoxMax(font_id, (jd_V2F){0.0f, 0.0f}, utf32, wrap_width);
+    jd_ScratchArenaRelease(scratch);
+    return bm;
+}
+
+jd_V2F jd_CalcStringSize(jd_String font_id, jd_UTFDecodedString utf32_string, f32 wrap_width) {
+    jd_Renderer* renderer = jd_RendererGet();
+    jd_Font* font = jd_FontGetByID(font_id);
+    jd_Glyph* fallback = jd_FontGetGlyph(font, '?');
+    
+    f32 dpi_scaling = ((f32)jd_PlatformWindowGetDPI(renderer->current_window) / (f32)font->faces[0].dpi);
+    
+    f32 line_adv = font->faces[0].line_adv;
+    
+    jd_V2F pos = jd_V2F(0.0, 0.0);
+    jd_V2F size = jd_V2F(0.0, 0.0);
+    
+    b8 wrap = (wrap_width > 0.0f);
+    
+    if (!wrap) {
+        for (u64 i = 0; i < utf32_string.count; i++) {
+            if (utf32_string.utf32[i] == 0x0a) {
+                continue;
+            }
+            
+            if (utf32_string.utf32[i] == 0x0d) {
+                size.y += font->faces[0].line_adv * dpi_scaling;
+                pos.x = 0.0f;
+                continue;
+            }
+            
+            if (utf32_string.utf32[i] == 0) {
+                continue;
+            }
+            
+            jd_Glyph* g = jd_FontGetGlyph(font, utf32_string.utf32[i]);
+            if (!g || g->codepoint == 0) {
+                g = fallback;
+            }
+            
+            size.x += g->h_advance * dpi_scaling;
+            size.y = (g->face->ascent + g->face->descent) * dpi_scaling;
+        }
+    }  else {
+        for (u64 i = 0; i < utf32_string.count; i++) {
+            if (utf32_string.utf32[i] == 0x0a) {
+                continue;
+            }
+            
+            if (utf32_string.utf32[i] == 0x0d) {
+                size.y += font->faces[0].line_adv * dpi_scaling;
+                pos.x = 0.0f;
+                continue;
+            }
+            
+            if (utf32_string.utf32[i] == 0) {
+                continue;
+            }
+            
+            jd_Glyph* g = jd_FontGetGlyph(font, utf32_string.utf32[i]);
+            if (!g || g->codepoint == 0) {
+                g = fallback;
+            }
+            
+            f32 adv = g->h_advance;
+            
+            if (pos.x + (adv * dpi_scaling) > wrap_width) {
+                pos.y += line_adv * dpi_scaling;
+                pos.x = 0.0f;
+                size.y += line_adv * dpi_scaling;
+            } else {
+                pos.x += adv * dpi_scaling;
+                size.x += g->size.x;
+                size.y = jd_Max(g->size.y - g->offset.y, size.y);
+            }
+        }
+    }
+    
+    return size;
+}
+
+jd_V2F jd_CalcStringSizeUTF8(jd_String font_id, jd_String str, f32 wrap_width) {
+    jd_Renderer* renderer = jd_RendererGet();
+    jd_ScratchArena scratch = jd_ScratchArenaCreate(renderer->frame_arena);
+    jd_UTFDecodedString utf32 = jd_UnicodeDecodeUTF8String(scratch.arena, jd_UnicodeTF_UTF32, str, false);
+    jd_V2F ss = jd_CalcStringSize(font_id, utf32, wrap_width);
+    jd_ScratchArenaRelease(scratch);
+    return ss;
+}
+
 void jd_DrawStringUTF32(jd_String font_id, jd_UTFDecodedString utf32_string, jd_V2F window_pos, jd_TextOrigin baseline, jd_V4F color, f32 wrap_width) {
     jd_Renderer* renderer = jd_RendererGet();
     jd_Font* font = jd_FontGetByID(font_id);
     f32 dpi_scaling = ((f32)jd_PlatformWindowGetDPI(renderer->current_window) / (f32)font->faces[0].dpi);
     jd_Glyph* fallback = jd_FontGetGlyph(font, '?');
     jd_V2F pos = window_pos;
+    
+    pos.x *= renderer->dpi_scaling;
+    pos.y *= renderer->dpi_scaling;
+    
+    jd_V2F starting_pos = pos;
+    
+    jd_V4F supplied_color = color;
+    jd_V4F glyph_color = supplied_color;
+    
+    b8 wrap = (wrap_width > 0.0f);
+    jd_Glyph* first_glyph = jd_FontGetGlyph(font, utf32_string.utf32[0]);
+    if (!first_glyph || first_glyph->codepoint == 0) {
+        first_glyph = fallback;
+        glyph_color = (jd_V4F){1.0, 0.0, 0.0, 1.0};
+    }
+    
+    f32 descent = first_glyph->face->descent;
+    f32 ascent  = first_glyph->face->ascent;
     switch (baseline) {
         default: return;
         
         case jd_TextOrigin_TopLeft: {
-            pos.y += font->faces[0].line_adv;
+            pos.y += ((ascent + descent) * dpi_scaling);
             break;
         }
         
@@ -582,17 +696,6 @@ void jd_DrawStringUTF32(jd_String font_id, jd_UTFDecodedString utf32_string, jd_
             break;
         }
     }
-    
-    pos.x *= renderer->dpi_scaling;
-    pos.y *= renderer->dpi_scaling;
-    pos.y += font->faces[0].descent;
-    
-    jd_V2F starting_pos = pos;
-    
-    jd_V4F supplied_color = color;
-    jd_V4F glyph_color = supplied_color;
-    
-    b8 wrap = (wrap_width > 0);
     
     for (u64 i = 0; i < utf32_string.count; i++) {
         glyph_color = supplied_color;
@@ -622,6 +725,7 @@ void jd_DrawStringUTF32(jd_String font_id, jd_UTFDecodedString utf32_string, jd_
             if ((pos.x - starting_pos.x) + adv > wrap_width) {
                 pos.x = starting_pos.x;
                 pos.y += font->faces[0].line_adv * dpi_scaling;
+                //pos.y += glyph->face->descent * dpi_scaling;
             }
             
         }
@@ -811,6 +915,7 @@ void jd_RendererDraw() {
         }
         jd_DArray* vertices = tex->vertices;
         glBufferSubData(GL_ARRAY_BUFFER, 0, vertices->count * sizeof(jd_GLVertex), vertices->view.mem);
+        glBindTexture(GL_TEXTURE_2D_ARRAY, tex->gl_index);
         glDrawArrays(GL_TRIANGLES, 0, vertices->count);
         jd_DArrayClearNoDecommit(vertices);
         tex->bound = 0;

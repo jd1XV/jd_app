@@ -1,4 +1,5 @@
 #include "../glad/glad_wgl.h"
+#include "jd_icon_font.h"
 
 static const jd_String app_manifest = jd_StrConst("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>" \
                                                   "<assembly xmlns=\"urn:schemas-microsoft-com:asm.v1\" manifestVersion=\"1.0\" xmlns:asmv3=\"urn:schemas-microsoft-com:asm.v3\">" \
@@ -339,7 +340,7 @@ jd_TitleBarFunction(_jd_default_titlebar_function_custom) {
     jd_UIBoxRec* titlebar_parent = 0;
     u32 dpi = GetDpiForWindow(window->handle);
     
-    jd_UIPushFont(jd_StrLit("OS_BaseFontWindows"));
+    jd_UIFontPush(jd_StrLit("OS_BaseFontWindows"));
     
     f32 titlebar_height = (45.0f * dpi) / JD_DEFAULT_DPI_REFERENCE;
     {
@@ -368,12 +369,15 @@ jd_TitleBarFunction(_jd_default_titlebar_function_custom) {
         jd_UIBoxConfig config = {0};
         config.string_id = jd_StrLit("titlebar");
         config.label = window->app->package_name;
+        config.label_alignment = jd_V2F(0.5, 0.5);
         config.rect.max.x = window->size.x;
         config.rect.max.y = titlebar_height;
         config.rect.min.x  = 0.0f;
         config.rect.min.y  = 0.0f;
         config.act_on_click = true;
         config.static_color = true;
+        config.clickable = true;
+        config.use_padding = true;
         
         jd_UIResult result = jd_UIBox(&config);
         if (result.l_clicked) {
@@ -392,8 +396,11 @@ jd_TitleBarFunction(_jd_default_titlebar_function_custom) {
         jd_UIBoxConfig config = {0};
         config.parent = titlebar_parent;
         config.string_id = jd_StrLit("titlebar_closebutton");
-        config.label = jd_StrLit("X");
+        config.label = jd_StrLit(jd_FontIcon_Cancel);
+        config.label_alignment = jd_V2F(0.5, 0.5);
         config.rect.max = button_size;
+        config.clickable = true;
+        config.use_padding = true;
         
         if (left)
             config.rect.min.x  = 0.0f;
@@ -412,8 +419,11 @@ jd_TitleBarFunction(_jd_default_titlebar_function_custom) {
         jd_UIBoxConfig config = {0};
         config.parent = titlebar_parent;
         config.string_id = jd_StrLit("titlebar_maxbutton");
-        config.label = jd_StrLit("+");
+        config.label_alignment = jd_V2F(0.5, 0.5);
+        config.label = (jd_AppWindowIsMaximized(window)) ? jd_StrLit(jd_FontIcon_Popup) : jd_StrLit(jd_FontIcon_Plus);
         config.rect.max = button_size;
+        config.clickable = true;
+        config.use_padding = true;
         
         if (left)
             config.rect.min.x  = button_size.x;
@@ -433,8 +443,11 @@ jd_TitleBarFunction(_jd_default_titlebar_function_custom) {
         jd_UIBoxConfig config = {0};
         config.parent = titlebar_parent;
         config.string_id = jd_StrLit("titlebar_minbutton");
-        config.label = jd_StrLit("_");
+        config.label_alignment = jd_V2F(0.5, 0.5);
+        config.label = jd_StrLit(jd_FontIcon_Minus);
         config.rect.max = button_size;
+        config.clickable = true;
+        config.use_padding = true;
         
         if (left)
             config.rect.min.x  = button_size.x * 2;
@@ -464,6 +477,7 @@ jd_TitleBarFunction(_jd_default_titlebar_function_custom) {
         config.act_on_click = true;
         config.static_color = true;
         config.cursor = jd_Cursor_Resize_V;
+        //config.clickable = true;
         
         jd_UIResult result = jd_UIBox(&config);
         jd_UIStylePop();
@@ -475,9 +489,12 @@ jd_TitleBarFunction(_jd_default_titlebar_function_custom) {
 }
 
 void jd_AppLoadSystemFont(jd_Arena* arena) {
-    jd_File segoe_ui = jd_DiskFileReadFromPath(arena, jd_StrLit("C:\\Windows\\Fonts\\arial.ttf"), false);
+    jd_File segoe_ui = jd_DiskFileReadFromPath(arena, jd_StrLit("C:\\Windows\\Fonts\\segoeui.ttf"), false);
+    jd_File icons    = jd_DiskFileReadFromPath(arena, jd_StrLit("assets/jd_font_custom.ttf"), false);
+    
     jd_FontCreateEmpty(jd_StrLit("OS_BaseFontWindows"), MEGABYTES(32), 16);
     jd_FontAddTypefaceFromMemory(jd_StrLit("OS_BaseFontWindows"), segoe_ui, &jd_unicode_range_all, 11, 192);
+    jd_FontAddTypefaceFromMemory(jd_StrLit("OS_BaseFontWindows"), icons, &jd_unicode_range_all, 11, 192);
 }
 
 jd_PlatformWindow* jd_AppPlatformCreateWindow(jd_PlatformWindowConfig* config) {

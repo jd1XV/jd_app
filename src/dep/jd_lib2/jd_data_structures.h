@@ -32,7 +32,7 @@ x->next = 0; \
 } while (0) \
 
 #define jd_ForDLLForward(i, cond) jd_ForSLL(i, cond)
-#define jd_ForDLLBackward(i, cond) for (o; cond; i = i->prev)
+#define jd_ForDLLBackward(i, cond) for (; cond; i = i->prev)
 #define jd_DLNext(x) jd_SLNext(x)
 #define jd_DLPrev(x) x->prev
 
@@ -47,15 +47,23 @@ x->next->prev = x; \
 #define jd_DLinkPrev(x, y) \
 do { \
 void* _prev = x->prev; \
-(x->prev = y; \
+x->prev = y; \
 x->prev->prev = _prev; \
 x->prev->next = x; \
 } while (0) \
+
 
 #define jd_DLinksClear(x) \
 do { \
 jd_SLinkClear(x); \
 x->prev = 0; \
+} while (0) \
+
+#define jd_DLinksPop(x) \
+do { \
+if (x->prev) x->prev->next = x->next;\
+if (x->next) x->next->prev = x->prev;\
+jd_DLinksClear(x); \
 } while (0) \
 
 #define jd_TreeLinkNext(x, y) \
@@ -100,16 +108,22 @@ p->first_child = c; \
 
 #define jd_TreeLinksClear(x) \
 do { \
-if (x->parent) { \
-if (x->parent->first_child == x) x->parent->first_child = x->next; \
-if (x->parent->last_child == x)  x->parent->last_child = x->prev; \
-} \
-\
 jd_DLinksClear(x); \
 x->parent = 0; \
 x->last_child = 0; \
 x->first_child = 0; \
 } while (0) \
+
+#define jd_TreeLinksPop(x) \
+do { \
+if (x->parent) { \
+if (x->parent->first_child == x) x->parent->first_child = x->next; \
+if (x->parent->last_child == x)  x->parent->last_child = x->prev; \
+} \
+jd_DLinksPop(x);\
+jd_TreeLinksClear(x);\
+} while (0) \
+
 
 #define jd_TreeTraversePreorder(x) \
 do { \
@@ -128,6 +142,31 @@ x = x->parent; \
 \
 if (x != 0) \
 x = x->next; \
+} \
+} while (0) \
+
+#define jd_TreeTraversePreorderOut(x, down, across) \
+do { \
+if (x->first_child) { \
+x = x->first_child; \
+down++;\
+break; \
+} \
+else if (x->next) { \
+x = x->next; \
+across++;\
+break; \
+} \
+else { \
+while (x != 0 && x->next == 0) { \
+x = x->parent; \
+down--;\
+} \
+\
+if (x != 0) { \
+x = x->next; \
+across++; \
+} \
 } \
 } while (0) \
 
@@ -154,11 +193,16 @@ jd_ExportFn b32        jd_DArrayClearNoDecommit(jd_DArray* d_array);
 jd_ExportFn b32        jd_DArrayClearToIndexNoDecommit(jd_DArray* d_array, u64 index);
 jd_ExportFn void       jd_DArrayRelease(jd_DArray* d_array);
 
+#define jd_PrefixRootValue -1; // UINT MAX
+
 typedef struct jd_PrefixNode {
-    u32 value; // support unicode by default (i think)
+    jd_Arena* arena;
+    u32 value;
     b8  end;
+    
     void* payload;
     u64   payload_size;
+    
     jd_Node(jd_PrefixNode);
 } jd_PrefixNode;
 
