@@ -25,7 +25,9 @@ typedef struct jd_UIStyle {
     jd_V4F    color_active_mod;
     jd_V2F    padding;
     f32       corner_radius;
+    f32       box_softness;
     f32       border;
+    f32       box_thickness;
 } jd_UIStyle;
 
 typedef struct jd_UIBoxRec {
@@ -115,6 +117,7 @@ jd_ExportFn jd_ForceInline void jd_UIStylePush(jd_UIStyle* style);
 jd_ExportFn jd_ForceInline void jd_UIStylePop();
 jd_ExportFn jd_ForceInline void jd_UIFontPush(jd_String font_id);
 jd_ExportFn jd_ForceInline void jd_UIPopFont();
+jd_ExportFn jd_V2F jd_UIGetParentSize(jd_UIBoxRec* parent);
 
 static jd_UIStyle jd_default_style_dark = {
     .id = jd_StrConst("jd_default_style_dark"),
@@ -128,8 +131,10 @@ static jd_UIStyle jd_default_style_dark = {
     .color_hover_mod = {1.30, 1.30f, 1.30f, 1.30f},
     .color_active_mod = {.80f, .80f, .80f, 1.0f},
     .padding = {8.0f, 8.f},
-    .corner_radius = 0.0f,
-    .border = 3.0f
+    .corner_radius = 4.0f,
+    .box_softness = 0.0f,
+    .border = 3.0f,
+    .box_thickness = 0.0f
 };
 
 #ifdef JD_IMPLEMENTATION

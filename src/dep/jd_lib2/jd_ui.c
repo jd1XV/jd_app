@@ -19,6 +19,8 @@ static jd_Internal_UIState _jd_internal_ui_state = {0};
 #define jd_UIViewports_Max      256
 #define jd_UIBox_HashTable_Size KILOBYTES(1)
 
+
+
 jd_ForceInline jd_UIViewport* jd_UIViewportGetCurrent() {
     return &_jd_internal_ui_state.viewports[_jd_internal_ui_state.active_viewport];
 }
@@ -98,9 +100,11 @@ jd_ExportFn jd_UIBoxRec* jd_UIBoxGetByTag(jd_UITag tag) {
     return b;
 }
 
-jd_ForceInline b32 jd_UIRectContainsPoint(jd_RectF32 r, jd_V2F p) {
-    jd_V2F min = r.min;
-    jd_V2F max = {r.min.x + r.max.x, r.min.y + r.max.y};
+jd_ForceInline b32 jd_UIRectContainsPoint(jd_UIViewport* vp, jd_RectF32 r, jd_V2F p) {
+    f64 sf = jd_PlatformWindowGetDPIScale(vp->window);
+    
+    jd_V2F min = {r.min.x * sf, r.min.y * sf};
+    jd_V2F max = {(r.min.x * sf) + (r.max.x * sf), (r.min.y * sf) + (r.max.y * sf)};
     return ((p.x > min.x && p.x < max.x) && (p.y > min.y && p.y < max.y));
 }
 
@@ -109,7 +113,7 @@ jd_UIBoxRec* jd_UIPickBoxForPos(jd_UIViewport* vp, jd_V2F pos) {
     jd_UIBoxRec* b = vp->root;
     {
         while (b != 0) {
-            if (jd_UIRectContainsPoint(b->rect, pos)) {
+            if (jd_UIRectContainsPoint(vp, b->rect, pos)) {
                 ret = b;
             } 
             jd_TreeTraversePreorder(b);
@@ -120,7 +124,7 @@ jd_UIBoxRec* jd_UIPickBoxForPos(jd_UIViewport* vp, jd_V2F pos) {
     b = vp->menu_root;
     {
         while (b != 0) {
-            if (jd_UIRectContainsPoint(b->rect, pos)) {
+            if (jd_UIRectContainsPoint(vp, b->rect, pos)) {
                 ret = b;
             } 
             jd_TreeTraversePreorder(b);
@@ -131,7 +135,7 @@ jd_UIBoxRec* jd_UIPickBoxForPos(jd_UIViewport* vp, jd_V2F pos) {
     b = vp->popup_root;
     {
         while (b != 0) {
-            if (jd_UIRectContainsPoint(b->rect, pos)) {
+            if (jd_UIRectContainsPoint(vp, b->rect, pos)) {
                 ret = b;
             } 
             jd_TreeTraversePreorder(b);
@@ -142,7 +146,7 @@ jd_UIBoxRec* jd_UIPickBoxForPos(jd_UIViewport* vp, jd_V2F pos) {
     b = vp->titlebar_root;
     {
         while (b != 0) {
-            if (jd_UIRectContainsPoint(b->rect, pos)) {
+            if (jd_UIRectContainsPoint(vp, b->rect, pos)) {
                 ret = b;
             } 
             jd_TreeTraversePreorder(b);
@@ -217,6 +221,10 @@ jd_UIResult jd_UIBox(jd_UIBoxConfig* config) {
     jd_V4F color         = style->color_button;
     jd_V4F hovered_color = jd_V4FMul4(color, style->color_hover_mod);
     jd_V4F active_color  = jd_V4FMul4(color, style->color_active_mod);
+    
+    f32 softness        = style->box_softness;
+    f32 corner_radius   = style->corner_radius;
+    f32 thickness       = style->box_thickness;
     
     // input handling
     if (!config->disabled) {
@@ -295,14 +303,16 @@ jd_UIResult jd_UIBox(jd_UIBoxConfig* config) {
     
     b->rect = config->rect;
     
-    jd_V2F rect_size = {b->rect.max.x, b->rect.max.y};
-    jd_V2F rect_pos  = {b->rect.min.x, b->rect.min.y};
-    jd_DrawRect(rect_pos, rect_size, color);
+    f64 dpi_sf = jd_PlatformWindowGetDPIScale(vp->window);
+    
+    jd_V2F rect_size = {b->rect.max.x * dpi_sf, b->rect.max.y * dpi_sf};
+    jd_V2F rect_pos  = {b->rect.min.x * dpi_sf, b->rect.min.y * dpi_sf};
+    jd_DrawRect(rect_pos, rect_size, color, corner_radius, softness, thickness);
     if (config->label.count > 0) {
         jd_String* font_id = jd_DArrayGetBack(_jd_internal_ui_state.font_id_stack);
         jd_V2F string_pos = rect_pos;
         
-        f32 style_scaling = jd_PlatformWindowGetDPIScale(vp->window);
+        f32 style_scaling = dpi_sf;
         jd_V2F string_size = jd_CalcStringSizeUTF8(*font_id, config->label, 0.0f);
         string_pos.x += ((rect_size.x - string_size.x) * config->label_alignment.x);
         string_pos.y += ((rect_size.y - string_size.y) * config->label_alignment.y);

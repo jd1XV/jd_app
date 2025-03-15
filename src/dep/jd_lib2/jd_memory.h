@@ -6,6 +6,7 @@
 #ifndef JD_UNITY_H
 #include "jd_defs.h"
 #include "jd_sysinfo.h"
+#include "jd_error.h"
 #endif
 
 typedef struct jd_Arena {

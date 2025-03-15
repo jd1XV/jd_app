@@ -20,7 +20,7 @@
 #define jd_DebugBreak()   DebugBreak();
 
 #ifdef JD_CONSOLE
-#define jd_AppMainFn i32 main()
+#define jd_AppMainFn i32 main(i32 argc, const c8** argv)
 #else
 #define jd_AppMainFn i32 APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hInstPrev, PSTR cmdline, i32 cmdshow)
 #endif

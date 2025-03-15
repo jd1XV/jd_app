@@ -29,8 +29,8 @@ jd_String jd_StringPushF(jd_Arena* arena, jd_String fmt_string, ...) {
     i32 length = stb_vsnprintf(0, 0, fmt_string.mem, list);
     jd_String string = {0};
     string.count = length;
-    string.mem = jd_ArenaAlloc(arena, string.count);
-    stb_vsnprintf(string.mem, string.count, fmt_string.mem, list);
+    string.mem = jd_ArenaAlloc(arena, string.count + 1);
+    stb_vsnprintf(string.mem, string.count + 1, fmt_string.mem, list);
     va_end(list);
     return string;
 }
@@ -39,8 +39,8 @@ jd_String jd_StringPushVAList(jd_Arena* arena, jd_String fmt_string, va_list lis
     i32 length = stb_vsnprintf(0, 0, fmt_string.mem, list);
     jd_String string = {0};
     string.count = length;
-    string.mem = jd_ArenaAlloc(arena, string.count);
-    stb_vsnprintf(string.mem, string.count, fmt_string.mem, list);
+    string.mem = jd_ArenaAlloc(arena, string.count + 1);
+    stb_vsnprintf(string.mem, string.count + 1, fmt_string.mem, list);
     return string;
 }
 
@@ -113,7 +113,7 @@ void jd_DStringAppendF(jd_DString* d_string, jd_String app_fmt, ...) {
     va_list list = {0};
     va_start(list, app_fmt);
     jd_String str = jd_StringPushVAList(d_string->arena, app_fmt, list);
-    d_string->count += (str.count - 1);
+    d_string->count += str.count;
     d_string->arena->pos -= 1;  // little hack to cancel out stb_vsnprintf 0-termination
     va_end(list);
 }

@@ -109,6 +109,10 @@ typedef struct jd_GLVertex {
     jd_V3F pos;
     jd_V3F tx;
     jd_V4F col;
+    jd_V4F rect;
+    f32 rounding;
+    f32 softness;
+    f32 thickness;
 } jd_GLVertex;
 
 typedef struct jd_RenderObjects {
@@ -154,8 +158,8 @@ void jd_RendererInit();
 jd_ExportFn void jd_RendererBegin(jd_V2F render_size);
 jd_ExportFn void jd_DrawString(jd_String font_id, jd_String str, jd_V2F window_pos, jd_TextOrigin baseline, jd_V4F color, f32 wrap_width);
 jd_ExportFn void jd_CalcStringBoxUTF8(jd_String font_id, jd_String str, f32 wrap_width);
-jd_ExportFn void jd_DrawStringWithBG(jd_String font_id, jd_String str, jd_V2F window_pos, jd_TextOrigin baseline, jd_V4F text_color, jd_V4F bg_color, f32 wrap_width);
-jd_ExportFn void jd_DrawRect(jd_V2F window_pos, jd_V2F size, jd_V4F col);
+jd_ExportFn void jd_DrawStringWithBG(jd_String font_id, jd_String str, jd_V2F window_pos, jd_TextOrigin baseline, jd_V4F text_color, jd_V4F bg_color, f32 wrap_width, f32 box_rounding, f32 box_softness, f32 box_thickness);
+jd_ExportFn void jd_DrawRect(jd_V2F window_pos, jd_V2F size, jd_V4F col, f32 rounding, f32 softness, f32 thickness);
 jd_ExportFn void jd_RendererSetDPIScale(jd_Renderer* renderer, f32 scale);
 jd_ExportFn void jd_RendererBegin(jd_V2F render_size);
 jd_ExportFn void jd_RefreshFonts();

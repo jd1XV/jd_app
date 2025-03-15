@@ -7,9 +7,18 @@
 #ifndef JD_UNITY_H
 #include "jd_defs.h"
 #include "jd_sysinfo.h"
-#include "jd_string.h"
-#include "jd_memory.h"
+#include "jd_error.h"
+#include "jd_math.h"
 #include "jd_helpers.h"
+#include "jd_memory.h"
+#include "jd_string.h"
+#include "jd_hash.h"
+#include "jd_locks.h"
+#include "jd_unicode.h"
+#include "jd_data_structures.h"
+#include "jd_file.h"
+#include "jd_disk.h"
+#include "jd_input.h"
 #include "jd_renderer.h"
 #include "jd_timer.h"
 #include "jd_input.h"
@@ -19,7 +28,8 @@
 
 typedef struct jd_PlatformWindow jd_PlatformWindow;
 jd_ExportFn jd_V2F jd_PlatformWindowGetDrawSize(jd_PlatformWindow* window);
-jd_ExportFn f32 jd_PlatformWindowGetDPIScale(jd_PlatformWindow* window);
+jd_ExportFn jd_V2F jd_PlatformWindowGetScaledSize(jd_PlatformWindow* window);
+jd_ExportFn f64 jd_PlatformWindowGetDPIScale(jd_PlatformWindow* window);
 jd_ExportFn jd_V2F jd_PlatformGetMonitorDPI();
 jd_ExportFn u32 jd_PlatformWindowGetDPI(jd_PlatformWindow* window);
 jd_ExportFn jd_V2F jd_AppGetMousePos(jd_PlatformWindow* window);
@@ -91,7 +101,6 @@ void       jd_AppPlatformCloseWindow(jd_PlatformWindow* window);
 b32        jd_AppPlatformUpdate(jd_App* app);
 void       jd_AppSetCursor(jd_Cursor cursor);
 jd_ExportFn void jd_WindowDrawFPS(jd_PlatformWindow* window, jd_TextOrigin origin, jd_V2F pos);
-
 
 typedef void (*_jd_AppWindowFunction)(struct jd_PlatformWindow* window);
 

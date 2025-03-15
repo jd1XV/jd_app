@@ -13,7 +13,7 @@ jd_AppWindowFunction(WindowFunc) {
         done = true;
     }
     
-    jd_DrawStringWithBG(jd_StrLit("OS_BaseFontWindows"), string, (jd_V2F){0.0f, 40.0f}, jd_TextOrigin_TopLeft, (jd_V4F){0.8f, 0.5f, 0.7f, 1.0f}, (jd_V4F){0.15f, 0.15f, 0.15f, 1.0f}, jd_PlatformWindowGetDrawSize(window).x);
+    jd_DrawStringWithBG(jd_StrLit("OS_BaseFontWindows"), string, (jd_V2F){0.0f, 40.0f}, jd_TextOrigin_TopLeft, (jd_V4F){0.8f, 0.5f, 0.7f, 1.0f}, (jd_V4F){0.15f, 0.15f, 0.15f, 1.0f}, jd_PlatformWindowGetDrawSize(window).x, 0, 0, 0);
     jd_WindowDrawFPS(window, jd_TextOrigin_BottomLeft, (jd_V2F){0.0f, jd_PlatformWindowGetDrawSize(window).y});
 }
 
@@ -45,6 +45,7 @@ jd_AppWindowFunction(win2func) {
     config.label = jd_DStringGet(label);
     config.string_id = jd_StrLit("##dynamiclabelbutton");
     config.rect = (jd_RectF32){50.0f, 50.0f, 200.f, 45.0f};
+    config.label_alignment = jd_V2F(0.5f, 0.5f);
     config.use_padding = true;
     config.cursor = jd_Cursor_Hand;
     

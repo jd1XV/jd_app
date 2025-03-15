@@ -236,7 +236,7 @@ void jd_WindowDrawFPS(jd_PlatformWindow* window, jd_TextOrigin origin, jd_V2F po
     u32 fps_i = (u32)fps_f;
     
     jd_DStringAppendU32(window->fps_counter_string, fps_i, 10);
-    jd_DrawStringWithBG(jd_StrLit("OS_BaseFontWindows"), jd_DStringGet(window->fps_counter_string), pos, origin, (jd_V4F){1.0, 1.0, 1.0, 1.0}, (jd_V4F){.2, 0.2, 0.2, 0.65}, 1280.0f);
+    jd_DrawStringWithBG(jd_StrLit("OS_BaseFontWindows"), jd_DStringGet(window->fps_counter_string), pos, origin, (jd_V4F){1.0, 1.0, 1.0, 1.0}, (jd_V4F){.2, 0.2, 0.2, 0.65}, 1280.0f, 0.0f, 0.0f, 0.0f);
 }
 
 
@@ -338,11 +338,10 @@ jd_TitleBarFunction(_jd_default_titlebar_function_custom) {
     jd_TitleBarResult res = {0};
     
     jd_UIBoxRec* titlebar_parent = 0;
-    u32 dpi = GetDpiForWindow(window->handle);
     
     jd_UIFontPush(jd_StrLit("OS_BaseFontWindows"));
     
-    f32 titlebar_height = (45.0f * dpi) / JD_DEFAULT_DPI_REFERENCE;
+    f32 titlebar_height = 45.0f;
     {
         const f32 borders = 2.0f;
         SIZE titlebar_size = {0};
@@ -351,11 +350,13 @@ jd_TitleBarFunction(_jd_default_titlebar_function_custom) {
         if (GetThemePartSize(theme, NULL, WP_CAPTION, CS_ACTIVE, NULL, TS_TRUE, &titlebar_size) != S_OK) {
             jd_LogError("Couldn't open theme!", jd_Error_MissingResource, jd_Error_Critical);
         } else {
-            titlebar_height = ((f32)(titlebar_size.cy * dpi) / JD_DEFAULT_DPI_REFERENCE) + borders;
+            titlebar_height = (f32)(titlebar_size.cy + borders);
         }
         
         CloseThemeData(theme);
     }
+    
+    f32 dpi = GetDpiForWindow(window->handle);
     
     window->custom_titlebar_size = titlebar_height;
     i32 frame_y = GetSystemMetricsForDpi(SM_CYFRAME, dpi);
@@ -370,7 +371,7 @@ jd_TitleBarFunction(_jd_default_titlebar_function_custom) {
         config.string_id = jd_StrLit("titlebar");
         config.label = window->app->package_name;
         config.label_alignment = jd_V2F(0.5, 0.5);
-        config.rect.max.x = window->size.x;
+        config.rect.max.x = jd_PlatformWindowGetScaledSize(window).x;
         config.rect.max.y = titlebar_height;
         config.rect.min.x  = 0.0f;
         config.rect.min.y  = 0.0f;
@@ -390,7 +391,7 @@ jd_TitleBarFunction(_jd_default_titlebar_function_custom) {
     
     jd_UIStylePush(&jd_default_style_dark);
     b8 left = (window->titlebar_style == jd_TitleBarStyle_Left);
-    jd_V2F button_size = {.x = (40.0f * dpi) / JD_DEFAULT_DPI_REFERENCE, .y = titlebar_height};
+    jd_V2F button_size = {.x = 40.0f, .y = titlebar_height};
     
     {
         jd_UIBoxConfig config = {0};
@@ -405,7 +406,7 @@ jd_TitleBarFunction(_jd_default_titlebar_function_custom) {
         if (left)
             config.rect.min.x  = 0.0f;
         else
-            config.rect.min.x  = window->size.x - button_size.x;
+            config.rect.min.x  = jd_PlatformWindowGetScaledSize(window).x - button_size.x;
         
         config.rect.min.y = 0.0f;
         jd_UIResult result = jd_UIBox(&config);
@@ -428,7 +429,7 @@ jd_TitleBarFunction(_jd_default_titlebar_function_custom) {
         if (left)
             config.rect.min.x  = button_size.x;
         else
-            config.rect.min.x  = window->size.x - (button_size.x * 2);
+            config.rect.min.x  = jd_PlatformWindowGetScaledSize(window).x - (button_size.x * 2);
         
         config.rect.min.y = 0.0f;
         
@@ -452,7 +453,7 @@ jd_TitleBarFunction(_jd_default_titlebar_function_custom) {
         if (left)
             config.rect.min.x  = button_size.x * 2;
         else
-            config.rect.min.x  = window->size.x - (button_size.x * 3);
+            config.rect.min.x  = jd_PlatformWindowGetScaledSize(window).x - (button_size.x * 3);
         
         config.rect.min.y = 0.0f;
         
@@ -470,7 +471,7 @@ jd_TitleBarFunction(_jd_default_titlebar_function_custom) {
         jd_UIBoxConfig config = {0};
         config.parent = titlebar_parent;
         config.string_id = jd_StrLit("fake_shadow_titlebar");
-        config.rect.max.x = window->size.x;
+        config.rect.max.x = jd_PlatformWindowGetScaledSize(window).x;
         config.rect.max.y = padding + frame_y;
         config.rect.min.x  = 0.0f;
         config.rect.min.y  = 0.0f;
@@ -1026,11 +1027,21 @@ jd_V2F jd_PlatformWindowGetDrawSize(jd_PlatformWindow* window) {
     return window->size;
 }
 
+jd_ExportFn jd_V2F jd_PlatformWindowGetScaledSize(jd_PlatformWindow* window) {
+    f64 scale_factor = jd_PlatformWindowGetDPIScale(window);
+    return (jd_V2F){window->size.w / scale_factor, window->size.h / scale_factor};
+}
+
 u32 jd_PlatformWindowGetDPI(jd_PlatformWindow* window) {
     u32 dpi = GetDpiForWindow(window->handle);
     return dpi;
 }
 
-f32 jd_PlatformWindowGetDPIScale(jd_PlatformWindow* window) {
-    return (GetDpiForWindow(window->handle) / JD_DEFAULT_DPI_REFERENCE);
+f64 jd_PlatformWindowGetDPIScale(jd_PlatformWindow* window) {
+    HMONITOR mon = MonitorFromWindow(window->handle, MONITOR_DEFAULTTONEAREST);
+    u32 scale_factor = 100;
+    u32 result = 0;
+    if (result = GetScaleFactorForMonitor(mon, &scale_factor) != 0) {
+        return 1.0;
+    } else return (f64)scale_factor / 100.f;
 }

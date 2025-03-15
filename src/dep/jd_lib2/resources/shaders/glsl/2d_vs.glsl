@@ -2,11 +2,18 @@
 layout (location = 0) in vec3 vert_xyz;
 layout (location = 1) in vec3 vert_uvw;
 layout (location = 2) in vec4 vert_col;
-layout (location = 3) in uint texunit;
+layout (location = 3) in vec4 vert_rect;
+layout (location = 4) in float rounding;
+layout (location = 5) in float softness;
+layout (location = 6) in float thickness;
 
+out vec3 fs_xyz;
 out vec3 fs_uvw;
 out vec4 fs_col;
-flat out uint fs_texunit;
+out vec4 fs_rect;
+out float fs_rounding;
+out float fs_softness;
+out float fs_thickness;
 
 uniform vec2 screen_conv;
 
@@ -17,5 +24,9 @@ void main(){
     gl_Position.w = 1;
     fs_uvw = vert_uvw;
     fs_col = vert_col;
-    fs_texunit = texunit;
+    fs_xyz = vert_xyz;
+    fs_rect = vert_rect;
+    fs_rounding = rounding;
+    fs_softness = softness;
+    fs_thickness = thickness;
 }
