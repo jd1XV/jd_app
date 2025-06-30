@@ -65,6 +65,8 @@ typedef struct jd_TitleBarResult {
     b8 minimize_clicked;
     b8 close_clicked;
     b8 top_clicked;
+    
+    jd_V2F size;
 } jd_TitleBarResult;
 
 typedef enum jd_Cursor {

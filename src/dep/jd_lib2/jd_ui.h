@@ -37,6 +37,8 @@ typedef struct jd_UIBoxRec {
     jd_V2F     label_anchor;
     jd_String  label;
     
+    jd_UIViewport* vp;
+    
     struct jd_UIBoxRec* next_with_same_hash;
     
     u64 frame_last_touched;
@@ -59,6 +61,9 @@ typedef struct jd_UIViewport {
     jd_UIBoxRec* hot;
     jd_UIBoxRec* active;
     jd_UIBoxRec* last_active;
+    
+    jd_V2F client_size;
+    
     jd_PlatformWindow* window;
     
     b32 roots_init;
@@ -117,7 +122,7 @@ jd_ExportFn jd_ForceInline void jd_UIStylePush(jd_UIStyle* style);
 jd_ExportFn jd_ForceInline void jd_UIStylePop();
 jd_ExportFn jd_ForceInline void jd_UIFontPush(jd_String font_id);
 jd_ExportFn jd_ForceInline void jd_UIPopFont();
-jd_ExportFn jd_V2F jd_UIGetParentSize(jd_UIBoxRec* parent);
+jd_ExportFn jd_V2F jd_UIParentSize(jd_UIBoxRec* box);
 
 static jd_UIStyle jd_default_style_dark = {
     .id = jd_StrConst("jd_default_style_dark"),

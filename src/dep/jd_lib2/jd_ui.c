@@ -19,7 +19,11 @@ static jd_Internal_UIState _jd_internal_ui_state = {0};
 #define jd_UIViewports_Max      256
 #define jd_UIBox_HashTable_Size KILOBYTES(1)
 
-
+jd_ExportFn jd_V2F jd_UIParentSize(jd_UIBoxRec* box) {
+    if (box->parent) {
+        return box->parent->rect.max;
+    } else return box->vp->client_size;
+}
 
 jd_ForceInline jd_UIViewport* jd_UIViewportGetCurrent() {
     return &_jd_internal_ui_state.viewports[_jd_internal_ui_state.active_viewport];
@@ -302,6 +306,7 @@ jd_UIResult jd_UIBox(jd_UIBoxConfig* config) {
     jd_TreeLinkLastChild(parent, b);
     
     b->rect = config->rect;
+    b->vp = vp;
     
     f64 dpi_sf = jd_PlatformWindowGetDPIScale(vp->window);
     

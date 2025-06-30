@@ -44,7 +44,7 @@ jd_AppWindowFunction(win2func) {
     config.clickable = true;
     config.label = jd_DStringGet(label);
     config.string_id = jd_StrLit("##dynamiclabelbutton");
-    config.rect = (jd_RectF32){50.0f, 50.0f, 200.f, 45.0f};
+    config.rect = (jd_RectF32){0.0f, 0.0f, 200.f, 45.0f};
     config.label_alignment = jd_V2F(0.5f, 0.5f);
     config.use_padding = true;
     config.cursor = jd_Cursor_Hand;
