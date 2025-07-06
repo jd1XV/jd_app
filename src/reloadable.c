@@ -1,7 +1,7 @@
 #define JD_APP_RELOADABLE
-#include "dep/jd_lib2/platforms/jd_Windows.h"
-#include "dep/jd_lib2/jd_app.h"
-#include "dep/jd_lib2/jd_ui.h"
+#include <platforms/jd_Windows.h>
+#include <jd_app.h>
+#include <jd_ui.h>
 
 jd_AppWindowFunction(WindowFunc) {
     static b32 done = false;

@@ -1,7 +1,7 @@
-#include "dep/jd_lib2/platforms/jd_windows.h"
+#include <platforms/jd_windows.h>
 #define JD_DEBUG
 #define JD_IMPLEMENTATION
-#include "dep/jd_lib2/jd_unity.h"
+#include <jd_unity.h>
 
 jd_AppMainFn {
     jd_DebugPrintSysInfo();

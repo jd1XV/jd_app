@@ -7,6 +7,14 @@ set dir=%~dp0
 
 set appname=jd_app_test_lib
 
+set jd_lib_path=..\jd_lib
+set freetype_path=C:\Code\freetype-2.13.2
+set srcfiles=reloadable.c
+
+set includes= ^
+/I"!jd_lib_path!\include" ^
+/I"!freetype_path!\include"
+
 set subsys="windows"
 
 set compflags= ^
@@ -22,17 +30,19 @@ if %arg%==-d (set optiflags=!debugflags!)
 if %arg%==-r (set optiflags=!releaseflags!)
 
 set linkflags= ^
-User32.lib gdi32.lib Opengl32.lib Ws2_32.lib Crypt32.lib Wldap32.lib Normaliz.lib Shlwapi.lib Ole32.lib advapi32.lib dwmapi.lib  Comdlg32.lib Shell32.lib Shcore.lib ../dev/lib/freetype.lib ../build/jd_app_test.lib
+User32.lib gdi32.lib Opengl32.lib Ws2_32.lib Crypt32.lib Wldap32.lib Normaliz.lib Shlwapi.lib Ole32.lib advapi32.lib dwmapi.lib  Comdlg32.lib Shell32.lib Shcore.lib "!freetype_path!/objs/freetype.lib" ../build/jd_app_test.lib
 
 if %arg%==-d (set linkflags = /DEBUG:FULL !linkflags!)
 
-if not exist build mkdir build
-if not exist build/assets mkdir build/assets
-if not exist build/generated mkdir build/generated
-if not exist dev mkdir dev
-if not exist dev/obj mkdir dev/obj
-if not exist dev/lib mkdir dev/lib
+if not exist "build" mkdir "build"
+if not exist "build/assets" mkdir "build/assets"
+if not exist "build/generated" mkdir "build/generated"
+if not exist "build/jd_app_pkg" mkdir "build/jd_app_pkg"
+attrib +h "build/jd_app_pkg"
+if not exist "dev" mkdir "dev"
+if not exist "dev/obj" mkdir "dev/obj"
+if not exist "dev/lib" mkdir "dev/lib"
 
 pushd src\
-cl /LD !compflags! !optiflags! app_functions.c /Fo..\dev\obj\ /link !linkflags! /INCREMENTAL:NO /OUT:../build/jd_app_pkg/!appname!.dll 
+cl /LD !compflags! !includes! !optiflags! !srcfiles! /Fo..\dev\obj\ /link !linkflags! /INCREMENTAL:NO /OUT:../build/jd_app_pkg/!appname!.dll 
 popd

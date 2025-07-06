@@ -16,9 +16,7 @@ blacklist_patterns = {
 
 load_paths_base = {
  { .path = ".", .relative = true, .recursive = true, },
- { .path = "C:\Code\jd_lib\src", .relative = false, .recursive = false, },
- { .path = "C:\Code\jd_thread", .relative = false, .recursive = true, },
- { .path = "C:\Code\freetype-2.13.2\include", .relative = false, .recursive = true, }
+ { .path = "C:\Code\jd_lib", .relative = false, .recursive = true, },
 };
 
 load_paths = {
