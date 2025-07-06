@@ -1,5 +1,5 @@
 # jd_app
-This is an in-progress application framework and custom standard library written (mostly) from scratch in C17. 
+This is an in-progress application framework and [custom standard library](https://github.com/jd1XV/jd_lib) written (mostly) from scratch in C17. 
 
 jd_app is in the very early stages, but is being designed from the ground up with cross-platform compatibility in mind. Right now, it runs on Windows using native Win32 APIs. Versions for Linux and other platforms can be expected as the project develops.
 
