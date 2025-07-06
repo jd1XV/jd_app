@@ -14,9 +14,15 @@ jd_app is in the very early stages, but is being designed from the ground up wit
 
 *Note that this is a work in progress, and many of these features are immature and liable to change.*
 
+##### To install:
+1. Clone this repo & [jd_lib](https://github.com/jd1XV/jd_lib) to the same folder.
+2. Indicate the path of jd_lib and freetype in build.bat and build_lib.bat
+3. Enjoy! Compile your program by running build.bat and build_lib.bat.
+
+
 ##### Inspired by:
-- Sean Barrett (https://github.com/nothings)
 - Ryan Fleury (https://www.rfleury.com/)
+- Sean Barrett (https://github.com/nothings)
 - Allen Webster (https://mr4th.com/)
 - Casey Muratori (https://mollyrocket.com/)
 - Omar Cornut (https://github.com/ocornut)
