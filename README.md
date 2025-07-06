@@ -19,16 +19,16 @@ jd_app is in the very early stages, but is being designed from the ground up wit
 2. Install [freetype](https://github.com/freetype/freetype).
 3. Indicate the path of freetype in build.bat and build_lib.bat.
 
-   <sub>Note: if you put jd_lib in a different folder than jd_app, indicate its path in build.bat and build_lib.bat as well.</sub>
+   <sub>Note: if you put !jd_lib! in a different folder than !jd_app!, indicate its path in build.bat and build_lib.bat as well.</sub>
 
 ##### To use:
-- Your static code starts in main.c.
-- Your reloadable code goes in reloadable.c. Note: more dynamic code can be added by specifying more source files in build_lib.bat.
-- Compile your program by running build.bat. Compile or recompile your dynamic code by running build_lib.bat (dynamic).
+- Your static code starts in !main.c!.
+- Your reloadable code goes in !reloadable.c!. Note: more dynamic code can be added by specifying more source files in !build_lib.bat!.
+- Compile your program by running !build.bat!. Compile or recompile your dynamic code by running !build_lib.bat!.
 
   <sub>Note: You will need to run vcvarsall.bat or use the MSVC developer console to access the MSVC compiler. See [here](https://learn.microsoft.com/en-us/cpp/build/building-on-the-command-line?view=msvc-170) for more info.</sub>
 
-- To disable dynamic code reloading, create your window with flag JD_AM_STATIC, and specify the function_ptr member of the jd_PlatformWindowConfig struct instead of the function_name member.
+- To disable dynamic code reloading, create your window with flag !JD_AM_STATIC!, and specify the function_ptr member of the !jd_PlatformWindowConfig! struct instead of the !function_name! member.
 
 ##### Inspired by:
 - Ryan Fleury (https://www.rfleury.com/)
