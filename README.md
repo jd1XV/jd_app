@@ -15,10 +15,12 @@ jd_app is in the very early stages, but is being designed from the ground up wit
 *Note that this is a work in progress, and many of these features are immature and liable to change.*
 
 ##### To install:
-1. Clone this repo & [jd_lib](https://github.com/jd1XV/jd_lib) to the same folder.
-2. Indicate the path of jd_lib and freetype in build.bat and build_lib.bat
-3. Enjoy! Compile your program by running build.bat and build_lib.bat.
+1. Clone both this repo and [jd_lib](https://github.com/jd1XV/jd_lib) to the same folder.
+2. Install [freetype](https://github.com/freetype/freetype)
+3. Indicate the path of freetype in build.bat and build_lib.bat*
+4. Enjoy! Compile your program by running build.bat and build_lib.bat.
 
+   * If you clone jd_lib to somewhere else, indicate its path in the build files as well.
 
 ##### Inspired by:
 - Ryan Fleury (https://www.rfleury.com/)
