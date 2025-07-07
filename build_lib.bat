@@ -5,7 +5,9 @@ set arg=%1%
 
 set dir=%~dp0
 
-set appname=jd_app_test_lib
+set appname=jd_app_test
+
+set libname=!appname!_lib
 
 set jd_lib_path=..\jd_lib
 set freetype_path=C:\Code\freetype-2.13.2
@@ -44,4 +46,4 @@ if not exist "dev" mkdir "dev"
 if not exist "dev/obj" mkdir "dev/obj"
 if not exist "dev/lib" mkdir "dev/lib"
 
-cl /LD !compflags! !includes! !optiflags! !srcfiles! /Fodev\obj\ /link !linkflags! /INCREMENTAL:NO /OUT:build/jd_app_pkg/!appname!.dll 
+cl /LD !compflags! !includes! !optiflags! !srcfiles! /Fodev\obj\ /link !linkflags! /INCREMENTAL:NO /OUT:build/jd_app_pkg/!libname!.dll 
