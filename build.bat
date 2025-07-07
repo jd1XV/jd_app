@@ -3,20 +3,20 @@ setlocal enabledelayedexpansion
 
 set appname=jd_app_test
 
-set jd_lib_path=..\jd_lib
+set jd_lib_path=../jd_lib
 set freetype_path=C:\Code\freetype-2.13.2
 
 set glad_path=!jd_lib_path!\include\dep\glad
 
 set includes= ^
-/I"!jd_lib_path!\include" ^
-/I"!freetype_path!\include"
+/I"!jd_lib_path!/include" ^
+/I"!freetype_path!/include"
 
 set arg=%1%
 
 set dir=%~dp0
 
-set srcfiles=main.c !glad_path!/glad_wgl.c !glad_path!/glad.c 
+set srcfiles=src/main.c !glad_path!/glad_wgl.c !glad_path!/glad.c 
 
 set subsys="windows"
 
@@ -46,9 +46,7 @@ if not exist "dev" mkdir "dev"
 if not exist "dev/obj" mkdir "dev/obj"
 if not exist "dev/lib" mkdir "dev/lib"
 
-pushd src\
-cl !optiflags! !includes! !compflags! !srcfiles! /Fe..\build\!appname!.exe /Fo..\dev\obj\  /link /INCREMENTAL:NO !linkflags! /SUBSYSTEM:!subsys!
-popd
+cl !optiflags! !includes! !compflags! !srcfiles! /Febuild\!appname!.exe /Fodev\obj\  /link /INCREMENTAL:NO !linkflags! /SUBSYSTEM:!subsys!
 
 pushd build\
 start /b mt.exe -nologo -manifest "!appname!.exe.manifest" -outputresource:"!appname!.exe"

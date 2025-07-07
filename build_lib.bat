@@ -9,7 +9,8 @@ set appname=jd_app_test_lib
 
 set jd_lib_path=..\jd_lib
 set freetype_path=C:\Code\freetype-2.13.2
-set srcfiles=reloadable.c
+
+set srcfiles=src/reloadable.c
 
 set includes= ^
 /I"!jd_lib_path!\include" ^
@@ -30,7 +31,7 @@ if %arg%==-d (set optiflags=!debugflags!)
 if %arg%==-r (set optiflags=!releaseflags!)
 
 set linkflags= ^
-User32.lib gdi32.lib Opengl32.lib Ws2_32.lib Crypt32.lib Wldap32.lib Normaliz.lib Shlwapi.lib Ole32.lib advapi32.lib dwmapi.lib  Comdlg32.lib Shell32.lib Shcore.lib "!freetype_path!/objs/freetype.lib" ../build/jd_app_test.lib
+User32.lib gdi32.lib Opengl32.lib Ws2_32.lib Crypt32.lib Wldap32.lib Normaliz.lib Shlwapi.lib Ole32.lib advapi32.lib dwmapi.lib  Comdlg32.lib Shell32.lib Shcore.lib "!freetype_path!/objs/freetype.lib" build/jd_app_test.lib
 
 if %arg%==-d (set linkflags = /DEBUG:FULL !linkflags!)
 
@@ -43,6 +44,4 @@ if not exist "dev" mkdir "dev"
 if not exist "dev/obj" mkdir "dev/obj"
 if not exist "dev/lib" mkdir "dev/lib"
 
-pushd src\
-cl /LD !compflags! !includes! !optiflags! !srcfiles! /Fo..\dev\obj\ /link !linkflags! /INCREMENTAL:NO /OUT:../build/jd_app_pkg/!appname!.dll 
-popd
+cl /LD !compflags! !includes! !optiflags! !srcfiles! /Fodev\obj\ /link !linkflags! /INCREMENTAL:NO /OUT:build/jd_app_pkg/!appname!.dll 
