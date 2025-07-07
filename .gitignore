@@ -53,3 +53,4 @@ dev/jd_app.rdbg
 *.lib
 *.ttf
 /test
+*.exp
