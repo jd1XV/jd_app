@@ -33,7 +33,7 @@ if %arg%==-d (set optiflags=!debugflags!)
 if %arg%==-r (set optiflags=!releaseflags!)
 
 set linkflags= ^
-User32.lib gdi32.lib Opengl32.lib Ws2_32.lib Crypt32.lib Wldap32.lib Normaliz.lib Shlwapi.lib Ole32.lib advapi32.lib dwmapi.lib  Comdlg32.lib Shell32.lib Shcore.lib "!freetype_path!/objs/freetype.lib" build/jd_app_test.lib
+User32.lib gdi32.lib Opengl32.lib Ws2_32.lib Crypt32.lib Wldap32.lib Normaliz.lib Shlwapi.lib Ole32.lib advapi32.lib dwmapi.lib  Comdlg32.lib Shell32.lib Shcore.lib "!freetype_path!/objs/freetype.lib" build/!appname!.lib
 
 if %arg%==-d (set linkflags = /DEBUG:FULL !linkflags!)
 
