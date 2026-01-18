@@ -9,7 +9,7 @@ jd_AppMainFn {
     
     jd_App* app = jd_AppCreate(&(jd_AppConfig){JD_AM_RELOADABLE, jd_StrLit("jd_app_test")});
     
-    jd_PlatformWindowConfig w_config = {
+    jd_WindowConfig w_config = {
         .app = app,
         .title = jd_StrLit("jd_app Test"),
         .id_str = jd_StrLit("MainWindowID"),
@@ -18,12 +18,14 @@ jd_AppMainFn {
         .titlebar_style = jd_TitleBarStyle_Right
     };
     
-    jd_PlatformWindow* main_window = jd_AppPlatformCreateWindow(&w_config);
+#if 0
+    jd_Window* main_window = jd_AppCreateWindow(&w_config);
+#endif
     
     w_config.id_str = jd_StrLit("win2id");
     w_config.function_name = jd_StrLit("win2func");
     
-    jd_PlatformWindow* win2 = jd_AppPlatformCreateWindow(&w_config);
+    jd_Window* win2 = jd_AppCreateWindow(&w_config);
     
     while (jd_AppIsRunning(app)) {
         jd_AppPlatformUpdate(app);

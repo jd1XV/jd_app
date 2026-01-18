@@ -53,3 +53,10 @@ dev/jd_app.rdbg
 /test
 *.exp
 /build/.vs
+*.rdbg
+*.rdi
+*.rad
+*.rdbg
+*.rdbg
+dev/jd_app.rdbg
+dev/jd_app.rdbg
