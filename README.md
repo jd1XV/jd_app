@@ -28,7 +28,7 @@ jd_app is in the very early stages, but is being designed from the ground up wit
 
   <sub>*Note: You will need to run vcvarsall.bat or use the MSVC developer console to access the MSVC compiler. See [here](https://learn.microsoft.com/en-us/cpp/build/building-on-the-command-line?view=msvc-170) for more info.*</sub>
 
-- To disable dynamic code reloading, create your jd_App with flag **JD_AM_STATIC**, and specify the **function_ptr** member of the **jd_PlatformWindowConfig** struct instead of the **function_name** member.
+- To disable dynamic code reloading, set the **.mode** member of the jd_AppConfig struct to **JD_AM_STATIC**, and specify the **.function_ptr** member of the **jd_PlatformWindowConfig** struct instead of the **function_name** member.
 
 ##### Inspired by:
 - Ryan Fleury (https://www.rfleury.com/)
