@@ -1,0 +1,44 @@
+# subgroup: face-smiling
+1F600                                                  ; fully-qualified     # 😀 E1.0 grinning face
+1F603                                                  ; fully-qualified     # 😃 E0.6 grinning face with big eyes
+1F604                                                  ; fully-qualified     # 😄 E0.6 grinning face with smiling eyes
+1F601                                                  ; fully-qualified     # 😁 E0.6 beaming face with smiling eyes
+1F606                                                  ; fully-qualified     # 😆 E0.6 grinning squinting face
+1F605                                                  ; fully-qualified     # 😅 E0.6 grinning face with sweat
+1F923                                                  ; fully-qualified     # 🤣 E3.0 rolling on the floor laughing
+1F602                                                  ; fully-qualified     # 😂 E0.6 face with tears of joy
+1F642                                                  ; fully-qualified     # 🙂 E1.0 slightly smiling face
+1F643                                                  ; fully-qualified     # 🙃 E1.0 upside-down face
+1FAE0                                                  ; fully-qualified     # 🫠 E14.0 melting face
+1F609                                                  ; fully-qualified     # 😉 E0.6 winking face
+1F60A                                                  ; fully-qualified     # 😊 E0.6 smiling face with smiling eyes
+1F607                                                  ; fully-qualified     # 😇 E1.0 smiling face with halo
+
+# subgroup: face-affection
+1F970                                                  ; fully-qualified     # 🥰 E11.0 smiling face with hearts
+1F60D                                                  ; fully-qualified     # 😍 E0.6 smiling face with heart-eyes
+1F929                                                  ; fully-qualified     # 🤩 E5.0 star-struck
+1F618                                                  ; fully-qualified     # 😘 E0.6 face blowing a kiss
+1F617                                                  ; fully-qualified     # 😗 E1.0 kissing face
+263A FE0F                                              ; fully-qualified     # ☺️ E0.6 smiling face
+263A                                                   ; unqualified         # ☺ E0.6 smiling face
+1F61A                                                  ; fully-qualified     # 😚 E0.6 kissing face with closed eyes
+1F619                                                  ; fully-qualified     # 😙 E1.0 kissing face with smiling eyes
+1F972                                                  ; fully-qualified     # 🥲 E13.0 smiling face with tear
+
+# subgroup: face-tongue
+1F60B                                                  ; fully-qualified     # 😋 E0.6 face savoring food
+1F61B                                                  ; fully-qualified     # 😛 E1.0 face with tongue
+1F61C                                                  ; fully-qualified     # 😜 E0.6 winking face with tongue
+1F92A                                                  ; fully-qualified     # 🤪 E5.0 zany face
+1F61D                                                  ; fully-qualified     # 😝 E0.6 squinting face with tongue
+1F911                                                  ; fully-qualified     # 🤑 E1.0 money-mouth face
+
+# subgroup: face-hand
+1F917                                                  ; fully-qualified     # 🤗 E1.0 smiling face with open hands
+1F92D                                                  ; fully-qualified     # 🤭 E5.0 face with hand over mouth
+1FAE2                                                  ; fully-qualified     # 🫢 E14.0 face with open eyes and hand over mouth
+1FAE3                                                  ; fully-qualified     # 🫣 E14.0 face with peeking eye
+1F92B                                                  ; fully-qualified     # 🤫 E5.0 shushing face
+1F914                                                  ; fully-qualified     # 🤔 E1.0 thinking face
+1FAE1                                                  ; fully-qualified     # 🫡 E14.0 saluting face

@@ -1,0 +1,31 @@
+// raddbg 0.9.25 project file
+
+recent_file: path: "../src/main.c"
+recent_file: path: "../../jd_lib/include/jd_renderer.c"
+recent_file: path: "../../jd_lib/include/win32_jd_font.c"
+recent_file: path: "../../jd_lib/include/jd_renderer2.c"
+recent_file: path: "../src/reloadable.c"
+recent_file: path: "../../jd_lib/include/jd_ui.c"
+recent_file: path: "../../jd_lib/include/win32_jd_app.c"
+recent_file: path: "../../jd_lib/include/jd_error.c"
+target:
+{
+  executable: "../build/jd_app_test.exe"
+  working_directory: "../build"
+  enabled: 1
+}
+debug_info:
+{
+  path: "W:/jd_app/build/jd_app_test.pdb"
+  timestamp: 66213724979165
+}
+debug_info:
+{
+  path: "W:/jd_app/build/jd_app_pkg/jd_app_test_lib.pdb"
+  timestamp: 66213634864193
+}
+debug_info:
+{
+  path: "C:/Code/jd_app/build/jd_app_test.pdb"
+  timestamp: 66213725006563
+}
